@@ -16,7 +16,7 @@ type: flowchart # flowchart | architecture | sequence — required
 title: Order fulfilment # optional; shown in the walkthrough and window titles
 direction: down # down | right | up | left — graph families only
 layout: dagre # dagre | elk | tala — optional; each family has its own default
-theme: light # light | dark — optional, default light
+theme: light # a preset (light | dark | colorblind | mono) or ./path/to/theme.yaml — optional, default light
 ```
 
 `direction` is rejected on `type: sequence` files — sequence diagrams have a
@@ -250,6 +250,57 @@ Anything beyond this list is rejected at validation time — if you need somethi
 the style subset can't express, that's a real gap; open an issue rather than
 reaching for engine-specific syntax that doesn't exist in this file format.
 
+### 6.1 Theme files
+
+`theme:` names a built-in preset (`light`, `dark`, `colorblind`, `mono`; run
+`diagrammar themes list`) or, when it contains a `/` or ends in `.yaml`/`.yml`,
+a theme file resolved relative to the diagram's own directory (`..` is fine —
+a shared theme usually lives above the diagrams that use it):
+
+```yaml
+diagrammar: 1
+type: architecture
+theme: ../themes/house.yaml
+nodes:
+  - id: db
+    shape: cylinder
+```
+
+A theme file sets a base preset, an optional palette, and optional style
+defaults. Every key is optional except `diagrammar-theme` and `base`:
+
+```yaml
+diagrammar-theme: 1
+base: light # the preset to start from; never another file
+palette:
+  background: '#f6f3ee' # page background
+  fill: '#fffdf8' # node and participant fill
+  stroke: '#4a3f35' # node, group and participant border
+  text: '#2b2520' # every label
+  groupFill: '#efe8dc' # group background
+  edge: '#8c5a2b' # edge and message lines
+defaults: # values use the style subset above
+  nodes: { strokeWidth: 2 }
+  groups: { dashed: true }
+  edges: {}
+  participants: {}
+  shapes: { cylinder: { fill: '#e6efe3' } } # per graph shape
+  kinds: { database: { fill: '#e6efe3' } } # per participant kind
+  messages: { return: { dashed: true } } # per message style
+```
+
+Precedence, strongest first: an element's own `style`, then its per-kind
+default (`shapes`/`kinds`/`messages`), then its family default
+(`nodes`/`groups`/`edges`/`participants`), then the palette, then the base
+preset. View dimming still wins over any resulting `opacity`.
+
+`diagrammar validate` and the MCP `diagrammar_validate` tool load the theme
+file and report its problems as an issue at `theme`, prefixed with the theme
+file's path and its own line number. The library's `validate()` only checks
+the reference's syntax; pass `RenderOptions.resolver` (for example
+`fileResolver(dirname(file))`) to `render()` so it can read the file, and see
+`schema/diagrammar-theme-v1.json` for the generated JSON Schema.
+
 ## 7. Validation
 
 Every validation error names a JSON path into your file and, where available, the
@@ -275,6 +326,8 @@ Beyond the schema shape itself, these are checked:
 8. `groups[].in` is only accepted in `architecture` — flowchart groups are flat.
 9. Every callout's `number` (explicit or auto-assigned by position) is unique
    across the file.
+10. A path-form `theme` is a well-formed relative path (no absolute paths,
+    drive letters or backslashes).
 
 ## 8. The Markdown walkthrough
 
@@ -305,4 +358,6 @@ guide at once: two groups, three notes (including one floating note), four
 callouts (two of them sharing a single edge as their target), two views, and a
 `description` on every node. Read it alongside its rendered goldens in
 `examples/goldens/annotated.*` to see exactly how each key in this guide turns
-into pixels.
+into pixels. `examples/themed.yaml` alongside `examples/themes/house.yaml` is
+the themed worked example: a path-form `theme:` reference and the theme file
+it resolves to, with a palette and per-shape style defaults (§6.1).

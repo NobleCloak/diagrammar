@@ -95,6 +95,10 @@ messages:
   - { id: place_order, from: user, to: api, label: 'POST /orders', style: sync }
 ```
 
+To restyle a whole diagram, set `theme:` to a preset or to a theme file
+(`diagrammar_schema` with `kind: "theme"` returns its schema); never reach for
+per-node `style` to do what a theme can.
+
 ## Id rules (read this before you patch anything)
 
 - Every id is unique across the _entire file_ — nodes, groups, participants,
@@ -223,7 +227,8 @@ that annotation first.
 
 Call `diagrammar_render` with the same `source`/`path` and, optionally, `format`
 (`png` default, or `svg`), `view` (render one named view instead of the root),
-`scale` (`1` or `2`, PNG only), `theme`, and `legend`. It returns an image content
+`scale` (`1` or `2`, PNG only), `theme` (a preset — `light`, `dark`, `colorblind`,
+`mono` — or a relative theme-file path), and `legend`. It returns an image content
 block by default (`returnImage: true`) so you can look at the result directly in
 the conversation; pass `outputPath` to also write the render to disk (only
 available when the server has a filesystem root — see below). Render after every

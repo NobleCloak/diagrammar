@@ -2,20 +2,21 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { parse, OpSchema, JsonPatchOpSchema } from '@noblecloak/diagrammar-core';
+import { parse, OpSchema, JsonPatchOpSchema, parseThemeFile } from '@noblecloak/diagrammar-core';
 
 // This suite keeps the three user/agent-facing docs (README.md,
 // docs/format-guide.md, docs/SKILL.md) honest: every fenced ```yaml block in
 // them must be a complete, self-contained Diagrammar document that actually
-// parses. For ```json blocks: one that IS an array, or an object carrying its
-// ops/patch under an "ops"/"patch" key (the shape of a `diagrammar_edit` call
-// — an array either way, once unwrapped), must contain only operations that
-// validate against the real `OpSchema`/`JsonPatchOpSchema` from
-// @noblecloak/diagrammar-core (M11) — a doc that drifts from the schema fails here
-// before it misleads a reader or an agent. A ```json block that parses to
-// some other object shape (e.g. an `.mcp.json`-style client config) is only
-// required to parse as JSON; it isn't an ops/patch example and isn't held to
-// that schema.
+// parses — except a block whose text contains a `diagrammar-theme:` line,
+// which is validated as a theme file (`parseThemeFile`) instead. For ```json
+// blocks: one that IS an array, or an object carrying its ops/patch under an
+// "ops"/"patch" key (the shape of a `diagrammar_edit` call — an array either
+// way, once unwrapped), must contain only operations that validate against
+// the real `OpSchema`/`JsonPatchOpSchema` from @noblecloak/diagrammar-core
+// (M11) — a doc that drifts from the schema fails here before it misleads a
+// reader or an agent. A ```json block that parses to some other object shape
+// (e.g. an `.mcp.json`-style client config) is only required to parse as
+// JSON; it isn't an ops/patch example and isn't held to that schema.
 
 const docsDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(docsDir, '..');
@@ -70,6 +71,11 @@ describe('docs YAML blocks parse as valid Diagrammar documents', () => {
     it.each(blocks.map((block, index) => ({ index, block })))(
       `${name} yaml block #$index parses`,
       ({ block }) => {
+        if (/^diagrammar-theme:/m.test(block)) {
+          const result = parseThemeFile(block, 'doc-block.yaml');
+          expect(result.ok, result.ok ? '' : JSON.stringify(result.issues)).toBe(true);
+          return;
+        }
         const result = parse(block);
         expect(result.ok, result.ok ? '' : JSON.stringify(result.issues)).toBe(true);
       },

@@ -70,6 +70,8 @@ edge, laid out automatically — no manual positioning, ever.
 - **Markdown walkthroughs** — every diagram can emit a `.md` companion: title,
   image reference, the callout legend, and an element-by-element description list,
   for docs that read well without the reader ever opening the image.
+- **Themes** — four built-in presets plus reusable theme files (palette +
+  per-kind style defaults).
 
 ## Install
 
@@ -95,12 +97,13 @@ bundlers: mark it `external`).
 ## CLI
 
 ```
-diagrammar render <files...> [-o <dir>] [--format png|svg|md|d2] [--view <id>] [--scale 1|2] [--theme light|dark] [--no-legend]
+diagrammar render <files...> [-o <dir>] [--format png|svg|md|d2] [--view <id>] [--scale 1|2] [--theme <preset|path>] [--no-legend]
 diagrammar validate <files...> [--json]
 diagrammar new <file> --type flowchart|architecture|sequence [--title "..."]
 diagrammar describe <file> [--json]
 diagrammar edit <file> --ops <ops.json|-> [--expected-hash <sha256>]
 diagrammar mcp [--root <dir>] [--port 3737] [--host 127.0.0.1] [--no-fs] [--allow-origin <origin>]...
+diagrammar themes list [--json]
 ```
 
 - `render` accepts globs. `-o <dir>` is an output _directory_ (created
@@ -117,6 +120,9 @@ diagrammar mcp [--root <dir>] [--port 3737] [--host 127.0.0.1] [--no-fs] [--allo
   Patch — the shape is auto-detected.
 - Every command exits `0` on success and `1` on any usage, validation, or I/O
   error.
+- `themes list` prints the built-in presets. A file can also reference a theme
+  file by relative path (`theme: ./themes/house.yaml`) — see the format guide
+  §6.1.
 
 See [`docs/format-guide.md`](docs/format-guide.md) for the full YAML schema and
 [`docs/SKILL.md`](docs/SKILL.md) for an agent-facing authoring guide.
