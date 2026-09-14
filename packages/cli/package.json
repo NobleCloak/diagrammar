@@ -1,6 +1,6 @@
 {
   "name": "@noblecloak/diagrammar",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "CLI for authoring, validating, and rendering Diagrammar diagrams.",
   "type": "module",
   "license": "Apache-2.0",
@@ -46,8 +46,8 @@
     "typecheck": "tsc -b"
   },
   "dependencies": {
-    "@noblecloak/diagrammar-core": "^0.0.0",
-    "@noblecloak/diagrammar-mcp": "^0.0.0"
+    "@noblecloak/diagrammar-core": "^0.1.0",
+    "@noblecloak/diagrammar-mcp": "^0.1.0"
   },
   "devDependencies": {
     "typescript": "6.0.3",
