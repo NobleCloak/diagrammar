@@ -1,11 +1,11 @@
 import { parseArgs } from 'node:util';
 import { readFile, mkdir, glob } from 'node:fs/promises';
 import { basename, dirname, extname, join } from 'node:path';
-import { render, walkthrough, type RenderOptions } from '@noblecloak/diagrammar-core';
+import { fileResolver, render, walkthrough, type RenderOptions } from '@noblecloak/diagrammar-core';
 import { writeAtomic } from '@noblecloak/diagrammar-mcp';
 import { describeIoError } from '../ioError.js';
 
-export const help = `diagrammar render <files...> [-o <dir>] [--format png|svg|md|d2] [--view <id>] [--scale 1|2] [--theme light|dark] [--no-legend]
+export const help = `diagrammar render <files...> [-o <dir>] [--format png|svg|md|d2] [--view <id>] [--scale 1|2] [--theme <preset|path>] [--no-legend]
 
 Renders one or more Diagrammar files. <files...> may be globs. Output is
 written beside each input file unless -o is given, in which case the
@@ -16,7 +16,7 @@ Options:
   --format          png (default) | svg | md | d2
   --view <id>       Render a single named view instead of the root.
   --scale 1|2       PNG scale factor (default 1).
-  --theme           light | dark (default: from the file).
+  --theme           Preset (light, dark, colorblind, mono) or a relative theme file path (default: from the file).
   --no-legend       Suppress the callout legend.
 `;
 
@@ -66,10 +66,6 @@ export async function run(argv: string[]): Promise<number> {
     console.error('render: --scale must be 1 or 2');
     return 1;
   }
-  if (values.theme !== undefined && values.theme !== 'light' && values.theme !== 'dark') {
-    console.error('render: --theme must be light or dark');
-    return 1;
-  }
   const theme = values.theme;
   const legend = !values['no-legend'];
 
@@ -84,6 +80,7 @@ export async function run(argv: string[]): Promise<number> {
     const stem = basename(file, extname(file));
     const outDir = values.out ?? dirname(file);
     const suffix = values.view !== undefined ? `.${values.view}` : '';
+    const resolver = fileResolver(dirname(file));
 
     try {
       // I3: -o's directory is created (recursively) rather than requiring
@@ -107,6 +104,7 @@ export async function run(argv: string[]): Promise<number> {
       if (scale !== undefined) options.scale = scale;
       if (theme !== undefined) options.theme = theme;
       options.legend = legend;
+      options.resolver = resolver;
 
       const result = await render(text, options);
 

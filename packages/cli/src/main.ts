@@ -8,6 +8,7 @@ import { run as runNew, help as newHelp } from './commands/new.js';
 import { run as runDescribe, help as describeHelp } from './commands/describe.js';
 import { run as runEdit, help as editHelp } from './commands/edit.js';
 import { run as runMcp, help as mcpHelp } from './commands/mcp.js';
+import { run as runThemes, help as themesHelp } from './commands/themes.js';
 
 export interface Command {
   run: (argv: string[]) => Promise<number>;
@@ -21,6 +22,7 @@ export const COMMANDS: Record<string, Command> = {
   describe: { run: runDescribe, help: describeHelp },
   edit: { run: runEdit, help: editHelp },
   mcp: { run: runMcp, help: mcpHelp },
+  themes: { run: runThemes, help: themesHelp },
 };
 
 const TOP_HELP = `diagrammar <command> [options]
@@ -32,6 +34,7 @@ Commands:
   describe <file>     Print a structural summary of a diagram
   edit <file>         Apply operations to a diagram file
   mcp                 Run the Diagrammar MCP server
+  themes list         List built-in theme presets
 
 Run "diagrammar <command> --help" for command-specific options.
 `;

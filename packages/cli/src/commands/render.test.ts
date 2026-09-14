@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { run } from './render.js';
@@ -104,4 +104,39 @@ describe('render command', () => {
     expect(code).toBe(1);
     expect(errSpy).toHaveBeenCalled();
   });
+
+  it('resolves a theme file relative to the diagram (not the cwd)', async () => {
+    await mkdir(join(dir, 'sub', 'themes'), { recursive: true });
+    await writeFile(
+      join(dir, 'sub', 'themes', 'house.yaml'),
+      'diagrammar-theme: 1\nbase: light\npalette:\n  background: "#123456"\n',
+      'utf8',
+    );
+    await writeFile(
+      join(dir, 'sub', 't.yaml'),
+      'diagrammar: 1\ntype: flowchart\ntheme: ./themes/house.yaml\nnodes:\n  - { id: a }\n',
+      'utf8',
+    );
+    const code = await run(['sub/t.yaml', '--format', 'svg']);
+    expect(code).toBe(0);
+    await expect(readFile(join(dir, 'sub', 't.svg'), 'utf8')).resolves.toContain('#123456');
+  }, 30000);
+
+  it('accepts any preset for --theme and rejects an unknown one with exit 1', async () => {
+    expect(await run(['f.yaml', '--format', 'svg', '--theme', 'colorblind'])).toBe(0);
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(await run(['f.yaml', '--format', 'svg', '--theme', 'neon'])).toBe(1);
+    expect(errSpy.mock.calls.flat().join('\n')).toContain('unknown theme "neon"');
+  }, 30000);
+
+  it('reports a missing theme file by name with exit 1', async () => {
+    await writeFile(
+      join(dir, 'm.yaml'),
+      'diagrammar: 1\ntype: flowchart\ntheme: ./nope.yaml\nnodes:\n  - { id: a }\n',
+      'utf8',
+    );
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(await run(['m.yaml', '--format', 'svg'])).toBe(1);
+    expect(errSpy.mock.calls.flat().join('\n')).toContain('nope.yaml');
+  }, 30000);
 });

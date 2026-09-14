@@ -55,4 +55,36 @@ describe('validate command', () => {
     const code = await run([file, '--json']);
     expect(code).toBe(1);
   });
+
+  it('reports a broken theme file as an issue at path "theme" (exit 1)', async () => {
+    await writeFile(join(dir, 'house.yaml'), 'diagrammar-theme: 1\nbase: neon\n', 'utf8');
+    const file = join(dir, 't.yaml');
+    await writeFile(
+      file,
+      'diagrammar: 1\ntype: flowchart\ntheme: ./house.yaml\nnodes:\n  - { id: a }\n',
+      'utf8',
+    );
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const code = await run([file, '--json']);
+    expect(code).toBe(1);
+    const printed = JSON.parse((logSpy.mock.calls[0]?.[0] as string) ?? '[]') as {
+      ok: boolean;
+      issues: { path: string; message: string }[];
+    }[];
+    expect(printed[0]?.ok).toBe(false);
+    expect(printed[0]?.issues[0]?.path).toBe('theme');
+    expect(printed[0]?.issues[0]?.message).toContain('house.yaml');
+  });
+
+  it('passes a valid theme file', async () => {
+    await writeFile(join(dir, 'ok.theme.yaml'), 'diagrammar-theme: 1\nbase: mono\n', 'utf8');
+    const file = join(dir, 'ok.yaml');
+    await writeFile(
+      file,
+      'diagrammar: 1\ntype: flowchart\ntheme: ./ok.theme.yaml\nnodes:\n  - { id: a }\n',
+      'utf8',
+    );
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    expect(await run([file])).toBe(0);
+  });
 });

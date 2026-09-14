@@ -1,12 +1,19 @@
 import { parseArgs } from 'node:util';
 import { readFile } from 'node:fs/promises';
-import { validate, type ValidationIssue } from '@noblecloak/diagrammar-core';
+import { dirname } from 'node:path';
+import {
+  checkThemeRef,
+  fileResolver,
+  parse,
+  type ValidationIssue,
+} from '@noblecloak/diagrammar-core';
 import { describeIoError } from '../ioError.js';
 
 export const help = `diagrammar validate <files...> [--json]
 
-Validates one or more Diagrammar YAML files. Exits 1 if any file has
-validation errors (or cannot be read), 0 otherwise.
+Validates one or more Diagrammar YAML files, including the theme file each
+one references. Exits 1 if any file has validation errors (or cannot be
+read), 0 otherwise.
 
 Options:
   --json   Print machine-readable JSON instead of human-readable text.
@@ -43,8 +50,13 @@ export async function run(argv: string[]): Promise<number> {
       });
       continue;
     }
-    const result = validate(text);
-    results.push({ file, ok: result.ok, issues: result.issues });
+    const parsed = parse(text);
+    if (!parsed.ok) {
+      results.push({ file, ok: false, issues: parsed.issues });
+      continue;
+    }
+    const themeIssues = await checkThemeRef(parsed.diagram.theme, fileResolver(dirname(file)));
+    results.push({ file, ok: themeIssues.length === 0, issues: themeIssues });
   }
   if (values.json === true) {
     console.log(JSON.stringify(results, null, 2));
