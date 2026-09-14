@@ -40,6 +40,33 @@ determinism story:
 - **No remote hrefs** appeared in the SVG, so a diagram that only uses
   inline icons keeps the "no network, byte-identical output" guarantee.
 
+## Slot map (second probe, same day)
+
+One tiny diagram per case, `themeID: 0`, one slot overridden to `#ABCDEF` at
+a time; a row lists every slot whose override showed up in the output.
+
+```
+rectangle@1       N1 text  N7 background  B1 stroke  B6 fill
+oval@1            N1       N7             B1         B6 fill
+diamond@1         N1       N7             B1         (no fill slot)
+document@1        N1       N7             B1         AB4 fill
+parallelogram@1   N1       N7             B1         (no fill slot)
+hexagon@1         N1       N7             B1         (no fill slot)
+cylinder@1        N1       N7             B1         AA4 fill
+queue@1           N1       N7             B1         (no fill slot)
+cloud@1           N1       N7 (also cloud body)  B1  (no fill slot)
+person@1          N1       N7             B1         B3 fill
+package@1         N1       N7             B1         AA4 fill
+rectangle@2       container B4, node B5
+rectangle@3       containers B4/B5, node B6
+cylinder@2        container B4, node AA5
+edge + label      N1 + N2 label text, B1 line + arrowhead, B6 endpoint fill
+```
+
+`themeID: 200` gives the identical slot assignment. Conclusion: only `N7`,
+`N1` and `N2` are usable as palette overrides; fills and strokes must be
+emitted as explicit `style.*` lines per element (spec §4.2 was amended).
+
 ## What was not tested
 
 - Icons on sequence-diagram participants (D2 actors). The design includes

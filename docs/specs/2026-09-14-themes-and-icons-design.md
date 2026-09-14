@@ -142,26 +142,34 @@ prefixed to the JSON path and the theme file's own YAML line number, e.g.
 `themes/house.yaml: palette.fill: invalid color (line 6)`, so it cannot be
 mistaken for an error in the diagram.
 
-### 4.2 Palette to D2 slots
+### 4.2 Palette lowering
 
-| palette slot | D2 override key | verified in spike |
-| ------------ | --------------- | ----------------- |
-| background   | `N7`            | inferred          |
-| fill         | `B6`            | yes               |
-| stroke       | `B1`            | yes               |
-| text         | `N1`            | yes               |
-| groupFill    | `B5`            | no                |
-| edge         | `B1` + `B2`     | no                |
+A second probe (recorded in the spike note, "Slot map") showed that D2's
+`theme-overrides` slots are **not** a stable way to recolor shapes: the slot a
+shape's fill comes from depends on its nesting level and shape type (a
+level-1 rectangle is `B6`, a level-2 one `B5`, a container `B4` or `B5`, a
+cylinder `AA4`/`AA5`, a person `B3`, a document `AB4`, and diamonds,
+hexagons, queues, clouds and parallelograms answer to no fill slot at all).
+Only three slots are reliable across every element and both light and dark
+bases: `N7` (page background), `N1` (all shape, container and fragment label
+text) and `N2` (edge/message label text).
 
-The first implementation task is a spike that pins the unverified rows by
-rendering a diagram with one node, one group, one labeled edge, and one
-message, overriding one slot at a time and asserting which output fill or
-stroke moved. The table above is then corrected in place and encoded as a
-single `PALETTE_TO_D2` constant with a test per row. Because `stroke` and
-`edge` may share `B1`, when both are set `edge` also sets `B2` and the
-compiler emits an explicit `style.stroke` on every edge that has no authored
-stroke, so the two slots are independent from the author's point of view
-regardless of how D2 shares them.
+So the palette lowers two ways:
+
+| palette slot | lowered to                                          |
+| ------------ | --------------------------------------------------- |
+| background   | D2 override `N7`; also the overlay's canvas colour  |
+| text         | D2 overrides `N1` and `N2`                          |
+| fill         | `style.fill` on every node and participant          |
+| stroke       | `style.stroke` on every node, group and participant |
+| groupFill    | `style.fill` on every group                         |
+| edge         | `style.stroke` on every edge and message            |
+
+The per-element lowering is implemented as the weakest layer of the same
+family-defaults merge described in §4.3, so a palette slot behaves exactly
+like a family default that the file's own `defaults:` block can override.
+The `theme-overrides` block is emitted only when `background` or `text` is
+set, and its keys are written in the fixed order `N1`, `N2`, `N7`.
 
 ### 4.3 Precedence
 
@@ -171,8 +179,8 @@ key at a weaker one; other keys still flow through):
 1. the element's own `style:`
 2. per-kind default: `shapes[<shape>]`, `kinds[<kind>]`, `messages[<style>]`
 3. per-family default: `nodes`, `groups`, `edges`, `participants`
-4. palette slot (as a D2 theme override, so it applies to anything not
-   covered above)
+4. palette slot (lowered per §4.2: `background`/`text` as D2 overrides,
+   everything else folded under the matching family default)
 5. base preset
 
 View dimming (`DIM_OPACITY_LINE`) still overrides any resulting `opacity`.
@@ -191,8 +199,11 @@ interface ResolvedTheme {
 }
 ```
 
-Presets resolve to a `ResolvedTheme` with empty `overrides` and `defaults`.
-`describe()` reports `theme.name`.
+Presets resolve to a `ResolvedTheme` with empty `overrides`, `palette` and
+`defaults`. The diagram model itself carries only the reference string
+(`theme: string`, the preset name or path as written); resolution is async
+and happens in `render()`, so `parse()` and `validate()` stay synchronous.
+`describe()` reports the reference string as `theme`.
 
 ### 4.5 JSON Schema
 
@@ -294,20 +305,26 @@ they are not part of this cycle.
 interface AssetResolver {
   read(relPath: string): Promise<Uint8Array>; // relative, POSIX separators
 }
-function fileResolver(baseDir: string): AssetResolver;
+function fileResolver(baseDir: string, options?: { root?: string }): AssetResolver;
+function memoryResolver(files: Record<string, string>): AssetResolver; // tests and docs
 ```
 
-`fileResolver` enforces lexical containment: rejects absolute paths, `..`
-segments that leave `baseDir`, and backslashes. It does **not** resolve
-symlinks; the MCP server wraps it with the real-path jail already in
-`packages/mcp/src/fs.ts` (`resolveInRoot`), so symlink escapes are caught in
-the one place that already handles them.
+A path reference is validated lexically at parse time (semantic rule 10):
+it must be relative, use `/` separators, and contain no null byte, drive
+letter or backslash. `..` segments are allowed, because a shared theme file
+normally lives above the diagrams that use it. Containment is enforced by
+the resolver against a jail root chosen by the caller: `fileResolver`
+rejects any resolved path outside `options.root` with `asset_outside_base`
+and enforces nothing when `root` is omitted (trusted local use). It does
+**not** resolve symlinks; the MCP server wraps it with the real-path jail
+already in `packages/mcp/src/fs.ts` (`resolveInRoot`), so symlink escapes
+are caught in the one place that already handles them.
 
 ### 6.2 Who supplies it
 
 | caller             | base directory                         | notes                                   |
 | ------------------ | -------------------------------------- | --------------------------------------- |
-| CLI, file argument | `dirname(file)`                        |                                         |
+| CLI, file argument | `dirname(file)`                        | no jail root (local, trusted)           |
 | CLI, stdin         | `process.cwd()`                        | documented in `render --help`           |
 | MCP, `--root`      | the diagram's directory under the root | jail-wrapped                            |
 | MCP, `--no-fs`     | none                                   | any path-form ref → `asset_fs_disabled` |
@@ -318,14 +335,17 @@ the one place that already handles them.
 - `asset_resolver_missing` — the file uses a path-form theme or icon and no
   resolver was supplied. Message tells library callers to pass `resolver`.
 - `asset_fs_disabled` — same situation under `--no-fs`.
-- `asset_outside_base` — path escapes the base directory.
+- `asset_outside_base` — path is malformed or escapes the jail root.
+- `asset_not_found` — the resolver could not find the file.
 - `icon_unknown` — unknown set or name (message carries nearest matches).
 - `icon_invalid` — sanitizer rejection or over-cap, with the reason.
 - `theme_invalid` — theme file failed to parse or validate.
 
-`validate()` without a registry checks icon syntax only and reports nothing
-about existence; the CLI and MCP always pass their registry so `validate`
-there is complete. This is the one deliberate difference between library and
+`validate()` is synchronous and checks syntax only: a theme path or icon ref
+is accepted if well formed. Existence and content are checked by the async
+`checkThemeRef(ref, resolver)` (and, in plan 2, the icon registry); the CLI
+and MCP always run those after a successful `validate()` so validation there
+is complete. This is the one deliberate difference between library and
 tool behavior and is stated in the format guide.
 
 ## 7. CLI and MCP surface
@@ -357,8 +377,8 @@ limit?: number }`. Without `query` it returns the registered sets with
 
 ### 7.3 `describe()` and the walkthrough
 
-`describe()` adds `theme: { name }` at the top level and `icon` on every
-element that has one. The Markdown walkthrough is unchanged.
+`describe()` keeps `theme` as the reference string as written (preset name or
+path) and adds `icon` on every element that has one. The Markdown walkthrough is unchanged.
 
 ## 8. Testing
 
