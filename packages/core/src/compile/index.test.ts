@@ -6,6 +6,7 @@ import { compile, createKeyMap, d2KeyFor, modelKeyFor, modelKeyForConnection } f
 import { compileAndRender } from '../engine/index.js';
 import type { Diagram, GraphDiagram, SequenceDiagram } from '../model/types.js';
 import type { LaidOutConnection } from '../engine/types.js';
+import { buildTheme, presetTheme } from '../theme/index.js';
 
 function fixture(name: string, ext: 'yaml' | 'd2'): string {
   return readFileSync(
@@ -261,5 +262,64 @@ describe('modelKeyForConnection', () => {
     expect(modelKeyForConnection(model, connTwo)).toBe('second');
     expect(modelKeyForConnection(model, connOne)).toBe('first');
     expect(modelKeyForConnection(model, connTwo)).toBe('second');
+  });
+});
+
+const THEME = buildTheme(
+  {
+    'diagrammar-theme': 1,
+    base: 'light',
+    palette: { background: '#fafafa', text: '#101010', edge: '#333333' },
+    defaults: {
+      shapes: { cylinder: { fill: '#e8f5e9' } },
+      messages: { return: { fontColor: '#777' } },
+    },
+  },
+  './house.yaml',
+);
+
+describe('compile with a theme', () => {
+  const graphYaml =
+    'diagrammar: 1\ntype: architecture\nnodes:\n  - { id: db, shape: cylinder }\n  - { id: api, style: { fill: "#own" } }\nedges:\n  - { from: api, to: db }\n';
+  const seqYaml =
+    'diagrammar: 1\ntype: sequence\nparticipants:\n  - { id: a }\n  - { id: b }\nmessages:\n  - { from: a, to: b, style: return }\n';
+
+  it('is byte-identical to no theme when given a preset', () => {
+    const p = parse(graphYaml);
+    if (!p.ok) throw new Error('fixture');
+    expect(compile(p.diagram, undefined, presetTheme('light')).d2).toBe(compile(p.diagram).d2);
+  });
+
+  it('emits theme-overrides inside d2-config for a graph and applies per-shape defaults', () => {
+    const p = parse(graphYaml);
+    if (!p.ok) throw new Error('fixture');
+    const { d2 } = compile(p.diagram, undefined, THEME);
+    expect(d2).toContain(
+      'vars: {\n  d2-config: {\n    layout-engine: tala\n    theme-overrides: {\n      N1: "#101010"\n      N2: "#101010"\n      N7: "#fafafa"\n    }\n  }\n}',
+    );
+    expect(d2).toContain('"db": {\n  shape: cylinder\n  label: "db"\n  style.fill: "#e8f5e9"\n}');
+    expect(d2).toContain('"api": {\n  shape: rectangle\n  label: "api"\n  style.fill: "#own"\n}');
+    expect(d2).toContain('"api" -> "db": {\n  style.stroke: "#333333"\n}');
+  });
+
+  it('emits a vars block before seq for a sequence diagram and themes messages', () => {
+    const p = parse(seqYaml);
+    if (!p.ok) throw new Error('fixture');
+    const { d2 } = compile(p.diagram, undefined, THEME);
+    expect(
+      d2.startsWith('vars: {\n  d2-config: {\n    theme-overrides: {\n      N1: "#101010"'),
+    ).toBe(true);
+    expect(d2).toContain(
+      '  "a" -> "b": {\n    style.stroke: "#333333"\n    style.stroke-dash: 3\n    style.font-color: "#777"\n    target-arrowhead: {\n      shape: arrow\n    }\n  }',
+    );
+  });
+
+  it('keeps view dimming last, after the arrowhead block, for a themed dimmed return message', () => {
+    const p = parse(seqYaml + 'views:\n  - { id: v, focus: [a] }\n');
+    if (!p.ok) throw new Error('fixture');
+    const { d2 } = compile(p.diagram, 'v', THEME);
+    expect(d2).toContain(
+      '    target-arrowhead: {\n      shape: arrow\n    }\n    style.opacity: 0.25\n  }',
+    );
   });
 });

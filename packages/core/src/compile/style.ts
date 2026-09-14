@@ -1,4 +1,5 @@
 import type { Style } from '../model/types.js';
+import type { OverrideSlot } from '../theme/types.js';
 
 /**
  * Quotes and escapes a string for use as a D2 string literal (a label value,
@@ -12,6 +13,18 @@ export function d2String(s: string): string {
 
 /** The fixed D2 line emitted to dim an out-of-focus element for a view. */
 export const DIM_OPACITY_LINE = 'style.opacity: 0.25';
+
+const OVERRIDE_ORDER: readonly OverrideSlot[] = ['N1', 'N2', 'N7'];
+
+/** D2 `theme-overrides` entries in a fixed slot order (spec §4.2). */
+export function themeOverrideLines(overrides: Partial<Record<OverrideSlot, string>>): string[] {
+  const lines: string[] = [];
+  for (const slot of OVERRIDE_ORDER) {
+    const value = overrides[slot];
+    if (value !== undefined) lines.push(`${slot}: ${d2String(value)}`);
+  }
+  return lines;
+}
 
 /**
  * Quotes an absolute, dot-joined D2 key segment by segment (e.g.

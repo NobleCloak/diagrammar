@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { d2String, styleLines } from './style.js';
+import { d2String, styleLines, themeOverrideLines } from './style.js';
 import type { Style } from '../model/types.js';
 
 describe('d2String', () => {
@@ -69,5 +69,18 @@ describe('styleLines', () => {
       'style.bold: true',
       'style.opacity: 0.9',
     ]);
+  });
+});
+
+describe('themeOverrideLines', () => {
+  it('emits N1, N2, N7 in that fixed order, quoted', () => {
+    expect(themeOverrideLines({ N7: '#fff', N1: '#111', N2: '#222' })).toEqual([
+      'N1: "#111"',
+      'N2: "#222"',
+      'N7: "#fff"',
+    ]);
+  });
+  it('emits nothing for an empty map', () => {
+    expect(themeOverrideLines({})).toEqual([]);
   });
 });

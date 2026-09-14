@@ -5,24 +5,31 @@ import type {
   MessageModel,
   MessageStyle,
   FragmentModel,
+  Style,
 } from '../model/types.js';
+import type { ResolvedTheme } from '../theme/types.js';
+import { mergeStyle } from '../theme/merge.js';
 import { d2ShapeForParticipant } from './shapes.js';
-import { d2String, quoteKey, styleLines, DIM_OPACITY_LINE } from './style.js';
+import { d2String, quoteKey, styleLines, themeOverrideLines, DIM_OPACITY_LINE } from './style.js';
 
-function messageExtraLines(style: MessageStyle, dim: boolean): string[] {
-  let base: string[];
-  switch (style) {
-    case 'sync':
-      base = [];
-      break;
-    case 'async':
-      base = ['style.stroke-dash: 3'];
-      break;
-    case 'return':
-      base = ['style.stroke-dash: 3', 'target-arrowhead: {', '  shape: arrow', '}'];
-      break;
-  }
-  return dim ? [...base, DIM_OPACITY_LINE] : base;
+/**
+ * A message's own semantics (`async`/`return` are dashed) are its "own
+ * style" for precedence purposes. `styleLines` appends the dim line last;
+ * it is pulled off and re-appended after the arrowhead block so a dimmed
+ * return message keeps today's exact line order (sequence-view.d2 fixture).
+ */
+function messageExtraLines(
+  style: MessageStyle,
+  dim: boolean,
+  theme: ResolvedTheme | undefined,
+): string[] {
+  const own: Style | undefined = style === 'sync' ? undefined : { dashed: true };
+  const merged = mergeStyle(theme, { family: 'message', messageStyle: style }, own);
+  const lines = styleLines(merged, dim);
+  const dimLine = dim ? lines.pop() : undefined;
+  if (style === 'return') lines.push('target-arrowhead: {', '  shape: arrow', '}');
+  if (dimLine !== undefined) lines.push(dimLine);
+  return lines;
 }
 
 function emitMessage(
@@ -30,9 +37,10 @@ function emitMessage(
   indent: string,
   lines: string[],
   focus: Set<string> | undefined,
+  theme: ResolvedTheme | undefined,
 ): void {
   const dim = focus !== undefined && !focus.has(msg.key);
-  const extra = messageExtraLines(msg.style, dim);
+  const extra = messageExtraLines(msg.style, dim, theme);
   const arrow = `${quoteKey(msg.from)} -> ${quoteKey(msg.to)}`;
   if (extra.length === 0) {
     lines.push(
@@ -54,6 +62,7 @@ function emitFragment(
   indent: string,
   lines: string[],
   focus: Set<string> | undefined,
+  theme: ResolvedTheme | undefined,
 ): void {
   const label =
     fragment.label !== undefined ? `${fragment.fragment}: ${fragment.label}` : fragment.fragment;
@@ -61,7 +70,7 @@ function emitFragment(
   lines.push(`${indent}  label: ${d2String(label)}`);
   if (focus !== undefined && !focus.has(fragment.path))
     lines.push(`${indent}  ${DIM_OPACITY_LINE}`);
-  emitItems(fragment.messages, `${indent}  `, lines, focus);
+  emitItems(fragment.messages, `${indent}  `, lines, focus, theme);
   lines.push(`${indent}}`);
 }
 
@@ -74,12 +83,13 @@ function emitItems(
   indent: string,
   lines: string[],
   focus: Set<string> | undefined,
+  theme: ResolvedTheme | undefined,
 ): void {
   for (const item of items) {
     if (item.kind === 'message') {
-      emitMessage(item, indent, lines, focus);
+      emitMessage(item, indent, lines, focus, theme);
     } else {
-      emitFragment(item, indent, lines, focus);
+      emitFragment(item, indent, lines, focus, theme);
     }
   }
 }
@@ -89,9 +99,20 @@ function emitItems(
  * `shape: sequence_diagram`, participants and messages nested inside it
  * using bare (unqualified) ids — see the D2 syntax primer, point 9.
  */
-export function compileSequence(model: SequenceDiagram, view?: ViewModel): string {
+export function compileSequence(
+  model: SequenceDiagram,
+  view?: ViewModel,
+  theme?: ResolvedTheme,
+): string {
   const focus = view !== undefined ? new Set(view.focus) : undefined;
   const lines: string[] = [];
+
+  const overrides = themeOverrideLines(theme?.overrides ?? {});
+  if (overrides.length > 0) {
+    lines.push('vars: {', '  d2-config: {', '    theme-overrides: {');
+    for (const l of overrides) lines.push(`      ${l}`);
+    lines.push('    }', '  }', '}', '');
+  }
 
   lines.push('seq: {');
   lines.push('  shape: sequence_diagram');
@@ -106,11 +127,15 @@ export function compileSequence(model: SequenceDiagram, view?: ViewModel): strin
     lines.push(`  ${quoteKey(p.id)}: {`);
     lines.push(`    shape: ${d2ShapeForParticipant(p.participantKind)}`);
     lines.push(`    label: ${d2String(p.label)}`);
-    for (const l of styleLines(p.style, dim)) lines.push(`    ${l}`);
+    for (const l of styleLines(
+      mergeStyle(theme, { family: 'participant', kind: p.participantKind }, p.style),
+      dim,
+    ))
+      lines.push(`    ${l}`);
     lines.push('  }');
   }
 
-  emitItems(model.items, '  ', lines, focus);
+  emitItems(model.items, '  ', lines, focus, theme);
 
   lines.push('}');
   return lines.join('\n') + '\n';
