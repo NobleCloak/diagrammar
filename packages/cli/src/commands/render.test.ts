@@ -122,6 +122,18 @@ describe('render command', () => {
     await expect(readFile(join(dir, 'sub', 't.svg'), 'utf8')).resolves.toContain('#123456');
   }, 30000);
 
+  it('accepts a --theme <path> flag pointing at a theme file beside the diagram', async () => {
+    await mkdir(join(dir, 'themes'), { recursive: true });
+    await writeFile(
+      join(dir, 'themes', 'house.yaml'),
+      'diagrammar-theme: 1\nbase: light\npalette:\n  background: "#123456"\n',
+      'utf8',
+    );
+    const code = await run(['f.yaml', '--format', 'svg', '--theme', './themes/house.yaml']);
+    expect(code).toBe(0);
+    await expect(readFile(join(dir, 'f.svg'), 'utf8')).resolves.toContain('#123456');
+  }, 30000);
+
   it('accepts any preset for --theme and rejects an unknown one with exit 1', async () => {
     expect(await run(['f.yaml', '--format', 'svg', '--theme', 'colorblind'])).toBe(0);
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});

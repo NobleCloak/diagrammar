@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { run } from './validate.js';
@@ -74,6 +74,40 @@ describe('validate command', () => {
     expect(printed[0]?.ok).toBe(false);
     expect(printed[0]?.issues[0]?.path).toBe('theme');
     expect(printed[0]?.issues[0]?.message).toContain('house.yaml');
+  });
+
+  it('reports an io_error on the theme ref (not a crash) and still validates the rest of the batch', async () => {
+    // `checkThemeRef` only maps ENOENT to a DiagrammarError (asset_not_found);
+    // pointing the theme ref at a directory makes the resolver's readFile
+    // throw a raw EISDIR that would otherwise escape validate.ts's per-file
+    // loop and abort the whole run.
+    await mkdir(join(dir, 'themes'));
+    const brokenFile = join(dir, 'broken.yaml');
+    await writeFile(
+      brokenFile,
+      'diagrammar: 1\ntype: flowchart\ntheme: ./themes\nnodes:\n  - { id: a }\n',
+      'utf8',
+    );
+    await writeFile(join(dir, 'ok.theme.yaml'), 'diagrammar-theme: 1\nbase: mono\n', 'utf8');
+    const okFile = join(dir, 'ok.yaml');
+    await writeFile(
+      okFile,
+      'diagrammar: 1\ntype: flowchart\ntheme: ./ok.theme.yaml\nnodes:\n  - { id: a }\n',
+      'utf8',
+    );
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const code = await run([brokenFile, okFile, '--json']);
+    expect(code).toBe(1);
+    const printed = JSON.parse((logSpy.mock.calls[0]?.[0] as string) ?? '[]') as {
+      file: string;
+      ok: boolean;
+      issues: { path: string; message: string }[];
+    }[];
+    expect(printed[0]?.file).toBe(brokenFile);
+    expect(printed[0]?.ok).toBe(false);
+    expect(printed[0]?.issues[0]?.path).toBe('theme');
+    expect(printed[1]?.file).toBe(okFile);
+    expect(printed[1]?.ok).toBe(true);
   });
 
   it('passes a valid theme file', async () => {

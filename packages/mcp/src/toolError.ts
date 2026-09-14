@@ -14,8 +14,16 @@ function isErrnoException(err: unknown): err is NodeJS.ErrnoException {
   return err instanceof Error && 'code' in err;
 }
 
-/** Matches a Windows drive-letter path or a POSIX absolute path, stopping at whitespace or a quote. */
-const ABSOLUTE_PATH_RE = /[A-Za-z]:\\[^\s'"]+|\/[^\s'"]+/g;
+/**
+ * Matches a Windows drive-letter path or a POSIX absolute path, stopping at
+ * whitespace or a quote. The POSIX branch's leading `/` carries a negative
+ * lookbehind refusing a preceding `.`, word character, `~` or `-`, so it
+ * only matches a `/` that starts a path at a boundary — otherwise a
+ * relative reference like `./themes/house.yaml` would have its
+ * `/themes/house.yaml` tail mistaken for an absolute path and mangled to
+ * `.<path>`.
+ */
+const ABSOLUTE_PATH_RE = /[A-Za-z]:\\[^\s'"]+|(?<![\w.~-])\/[^\s'"]+/g;
 
 /**
  * Strips absolute host filesystem paths out of an error message before it

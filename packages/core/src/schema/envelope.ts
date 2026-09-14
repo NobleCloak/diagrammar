@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import type { DiagramType, Direction, LayoutEngine } from '../model/types.js';
-import { isPathRef } from '../assets/paths.js';
-import { PRESET_NAMES, isPresetName } from '../theme/presets.js';
+import { PRESET_NAMES } from '../theme/presets.js';
 
 const DIAGRAM_TYPES = [
   'flowchart',
@@ -16,10 +15,27 @@ export const DirectionSchema = z.enum(DIRECTIONS);
 const LAYOUT_ENGINES = ['dagre', 'elk', 'tala'] as const satisfies readonly LayoutEngine[];
 export const LayoutEngineSchema = z.enum(LAYOUT_ENGINES);
 
-/** Spec §3.1: a preset name, or anything containing `/` or ending in .yaml/.yml. */
-export const ThemeSchema = z.string().refine((value) => isPresetName(value) || isPathRef(value), {
-  message: `theme must be one of ${PRESET_NAMES.join(', ')} or a relative path to a .yaml theme file`,
-});
+/**
+ * Spec §3.1: a preset name, or anything containing `/` or ending in
+ * .yaml/.yml. Modeled as a union (not `z.string().refine(...)`) so
+ * `z.toJSONSchema` emits an `anyOf` carrying the four-value enum instead of
+ * degrading to a bare `string` (spec §8, published JSON Schema).
+ *
+ * The regex branch needs `abort: true`: without it, Zod 4's union resolver
+ * treats a failed `invalid_value` (enum) issue as "aborted" (no `continue`
+ * flag) but a failed built-in `regex` check as "not aborted" (`continue:
+ * true`), so when exactly one branch is non-aborted it returns that
+ * branch's own issue directly and never reaches the union's custom `error`
+ * message. Marking the regex check `abort: true` makes both branches
+ * aborted on failure, which routes through `invalid_union` and surfaces
+ * this message as `issues[0]`.
+ */
+export const ThemeSchema = z.union(
+  [z.enum(PRESET_NAMES), z.string().regex(/\/|\.ya?ml$/i, { abort: true })],
+  {
+    error: `theme must be one of ${PRESET_NAMES.join(', ')} or a relative path to a .yaml theme file`,
+  },
+);
 
 /**
  * Every element-declared `id` (nodes, groups, edges, participants, messages,

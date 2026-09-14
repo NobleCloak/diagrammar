@@ -168,3 +168,22 @@ describe('render with an in-file theme path', () => {
     expect(result.svg).not.toContain('#123456');
   }, 30000);
 });
+
+const SEQ_THEME =
+  'diagrammar-theme: 1\nbase: light\npalette:\n  background: "#f0f0f0"\n  text: "#111111"\n  edge: "#2266aa"\ndefaults:\n  kinds:\n    database:\n      fill: "#33cc99"\n';
+
+describe('render with a themed sequence diagram', () => {
+  it('applies theme-overrides vars and a participant kind default to a rendered sequence SVG', async () => {
+    const resolver = memoryResolver({ 'themes/seq.yaml': SEQ_THEME });
+    const result = await render(sequenceFixture, {
+      format: 'svg',
+      theme: './themes/seq.yaml',
+      resolver,
+    });
+    expect(result.format).toBe('svg');
+    expect(result.svg).toContain('#f0f0f0');
+    expect(result.svg).toContain('#111111');
+    expect(result.svg).toContain('#2266aa');
+    expect(result.svg).toContain('#33cc99');
+  }, 30000);
+});

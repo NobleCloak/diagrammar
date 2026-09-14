@@ -28,12 +28,6 @@ describe('envelope enums', () => {
     }
     expect(LayoutEngineSchema.safeParse('graphviz').success).toBe(false);
   });
-
-  it('ThemeSchema accepts light/dark only', () => {
-    expect(ThemeSchema.safeParse('light').success).toBe(true);
-    expect(ThemeSchema.safeParse('dark').success).toBe(true);
-    expect(ThemeSchema.safeParse('solarized').success).toBe(false);
-  });
 });
 
 describe('ThemeSchema (spec §3.1)', () => {

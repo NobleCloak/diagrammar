@@ -55,7 +55,17 @@ export async function run(argv: string[]): Promise<number> {
       results.push({ file, ok: false, issues: parsed.issues });
       continue;
     }
-    const themeIssues = await checkThemeRef(parsed.diagram.theme, fileResolver(dirname(file)));
+    let themeIssues: ValidationIssue[];
+    try {
+      themeIssues = await checkThemeRef(parsed.diagram.theme, fileResolver(dirname(file)));
+    } catch (err) {
+      results.push({
+        file,
+        ok: false,
+        issues: [{ path: 'theme', message: describeIoError(err, file) }],
+      });
+      continue;
+    }
     results.push({ file, ok: themeIssues.length === 0, issues: themeIssues });
   }
   if (values.json === true) {
