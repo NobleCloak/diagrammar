@@ -132,7 +132,8 @@ See [`docs/format-guide.md`](docs/format-guide.md) for the full YAML schema and
 Diagrammar ships a Streamable HTTP MCP server with seven tools
 (`diagrammar_list`, `diagrammar_describe`, `diagrammar_validate`,
 `diagrammar_create`, `diagrammar_edit`, `diagrammar_render`, `diagrammar_schema`)
-and two resources (`diagrammar://schema/v1`, `diagrammar://guide`).
+and three resources (`diagrammar://schema/v1`, `diagrammar://schema/theme-v1`,
+`diagrammar://guide`).
 
 Start it:
 
