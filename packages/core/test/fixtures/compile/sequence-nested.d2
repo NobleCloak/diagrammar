@@ -1,0 +1,28 @@
+seq: {
+  shape: sequence_diagram
+  label: ""
+  "user": {
+    shape: person
+    label: "User"
+  }
+  "api": {
+    shape: rectangle
+    label: "API"
+  }
+  "db": {
+    shape: cylinder
+    label: "Orders DB"
+  }
+  "user" -> "api": "POST /orders"
+  "messages[1]": {
+    label: "alt: in stock"
+    "api" -> "db": "reserve"
+    "messages[1].messages[1]": {
+      label: "opt: backorder"
+      style.opacity: 0.25
+      "api" -> "db": "flag backorder" {
+        style.opacity: 0.25
+      }
+    }
+  }
+}

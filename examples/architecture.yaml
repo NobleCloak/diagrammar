@@ -1,0 +1,64 @@
+diagrammar: 1
+type: architecture
+title: Order platform architecture
+direction: right
+
+groups:
+  - id: edge
+    label: Edge
+  - id: platform
+    label: Platform
+  - id: data
+    label: Data
+
+nodes:
+  - id: client
+    label: Web client
+    shape: person
+    in: edge
+    description: |
+      Browser or MCP-driven agent client.
+  - id: gateway
+    label: API gateway
+    shape: cloud
+    in: edge
+    description: |
+      Terminates TLS and routes to the order service.
+  - id: orders
+    label: Order service
+    shape: rect
+    in: platform
+    description: |
+      Owns the order lifecycle state machine.
+  - id: worker
+    label: Fulfilment worker
+    shape: hexagon
+    in: platform
+    description: |
+      Consumes fulfilment events and drives carrier integrations.
+  - id: queue
+    label: Fulfilment queue
+    shape: queue
+    in: platform
+    description: |
+      Durable work queue between the order service and the worker.
+  - id: db
+    label: Orders database
+    shape: cylinder
+    in: data
+    description: |
+      Postgres, one schema per tenant.
+  - id: archive
+    label: Cold storage
+    shape: package
+    in: data
+    description: |
+      Nightly export of completed orders for analytics.
+
+edges:
+  - { from: client, to: gateway, label: "HTTPS" }
+  - { from: gateway, to: orders, label: "gRPC" }
+  - { from: orders, to: queue, label: "publish" }
+  - { from: queue, to: worker, label: "consume" }
+  - { from: orders, to: db, label: "read/write" }
+  - { from: worker, to: archive, label: "export" }

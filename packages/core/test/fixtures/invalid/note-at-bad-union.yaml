@@ -1,0 +1,7 @@
+diagrammar: 1
+type: flowchart
+nodes:
+  - id: start
+notes:
+  - at: 123
+    text: x

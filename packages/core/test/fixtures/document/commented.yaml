@@ -1,0 +1,28 @@
+# Order fulfilment flow — hand-edited, keep comments intact
+diagrammar: 1
+type: flowchart
+title: Order fulfilment
+direction: down
+
+groups:
+  - id: fulfilment
+    label: Fulfilment
+
+nodes:
+  - id: start
+    label: Order received
+    shape: oval
+    in: fulfilment
+  - id: check
+    label: Check stock # ask warehouse before shipping
+    in: fulfilment
+  - id: ship
+    label: Ship order
+    in: fulfilment
+
+edges:
+  - { from: start, to: check }
+  - id: yes
+    from: check
+    to: ship
+    label: "yes"

@@ -1,0 +1,125 @@
+# CI: build, lint, format, typecheck, and test (with coverage) across a
+# Node 24 / Node 26 x Linux / macOS matrix, using Bun to install and run
+# scripts in every cell. Build runs immediately after install and before
+# lint because typescript-eslint's type-aware rules resolve cross-package
+# types through each package's `exports` -> `dist/*.d.mts`, which don't
+# exist on a fresh checkout until the build step produces them. One cell
+# (ubuntu-latest, Node 24) additionally runs the suite directly under Node
+# (bypassing Bun as the runner) so the "byte-identical goldens" claim is
+# verified under both runtimes, not just asserted.
+#
+# This workflow cannot run yet: this repository has no remote configured and
+# nothing has been pushed to GitHub (Plan 07, Task 5). It is committed now so
+# it exists at the v1 milestone; its first real execution happens once the
+# repo is created on GitHub and pushed.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # DCO: every commit in a pull request must carry a `Signed-off-by:` trailer
+  # (git commit -s) — see CONTRIBUTING.md. Checked with plain git so there is
+  # no third-party action to pin. Runs on pull_request only: pushes to main
+  # are merges of PRs that already passed this check.
+  dco:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Check Signed-off-by on every PR commit
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for sha in $(git rev-list --no-merges "$BASE..$HEAD"); do
+            if ! git show -s --format=%B "$sha" | grep -Eq '^Signed-off-by: .+ <.+@.+>$'; then
+              echo "::error::commit $sha has no Signed-off-by trailer (use: git commit -s)"
+              git show -s --format='  %h %s' "$sha"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo 'One or more commits lack a DCO sign-off. Amend with `git commit -s --amend` or `git rebase --signoff`.'
+            exit 1
+          fi
+          echo "All commits in $BASE..$HEAD are signed off."
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node-version: ['24', '26']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+
+      - name: Cache Bun install cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build
+        run: bun run build
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Format check
+        run: bun run format:check
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Test with coverage
+        run: bun run test -- --coverage
+
+      # I5: goldens.test.ts and examples/determinism.test.ts claim byte-identical
+      # output across runtimes; this cell is what actually proves that for Node
+      # (every other cell already runs the suite under Bun, the tool runner for
+      # every cell of this matrix — see CONTRIBUTING.md).
+      - name: Test under Node
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '24'
+        run: node node_modules/vitest/vitest.mjs run
+
+      - name: Upload coverage artifact
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '24'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: coverage-report
+          path: coverage
+          if-no-files-found: error
+          retention-days: 14

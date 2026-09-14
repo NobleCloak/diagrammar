@@ -1,0 +1,29 @@
+diagrammar: 1
+type: architecture
+title: Platform topology
+direction: right
+layout: tala
+
+groups:
+  - id: warehouse
+    label: Warehouse
+  - id: fulfilment
+    label: Fulfilment
+    in: warehouse
+
+nodes:
+  - id: gateway
+    label: API Gateway
+    shape: rect
+  - id: worker
+    label: Pick Worker
+    shape: person
+    in: fulfilment
+  - id: db
+    label: Orders DB
+    shape: cylinder
+    in: fulfilment
+
+edges:
+  - { from: gateway, to: worker }
+  - { from: worker, to: db, label: 'reserve stock' }

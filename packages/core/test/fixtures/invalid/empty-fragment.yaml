@@ -1,0 +1,8 @@
+diagrammar: 1
+type: sequence
+participants:
+  - id: a
+  - id: b
+messages:
+  - fragment: opt
+    messages: []

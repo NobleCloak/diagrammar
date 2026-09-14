@@ -1,0 +1,38 @@
+diagrammar: 1
+type: sequence
+title: Place order sequence
+
+participants:
+  - id: user
+    label: User
+    kind: actor
+    description: |
+      Customer placing an order via the web client.
+  - id: api
+    label: Order API
+    kind: service
+    description: |
+      Public HTTP entrypoint for order operations.
+  - id: db
+    label: Orders DB
+    kind: database
+    description: |
+      Postgres store for order state.
+  - id: notifier
+    label: Notification queue
+    kind: queue
+    description: |
+      Async fan-out for confirmation emails.
+
+messages:
+  - { id: m1, from: user, to: api, label: "POST /orders", style: sync }
+  - fragment: alt
+    label: in stock
+    messages:
+      - { from: api, to: db, label: "reserve stock", style: sync }
+      - { from: db, to: api, label: "reserved", style: return }
+  - fragment: opt
+    label: notify
+    messages:
+      - { from: api, to: notifier, label: "enqueue confirmation", style: async }
+  - { from: api, to: user, label: "201 Created", style: return }

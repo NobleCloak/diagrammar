@@ -1,0 +1,6 @@
+diagrammar: 1
+type: architecture
+groups:
+  - id: shared
+nodes:
+  - id: shared

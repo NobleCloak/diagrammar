@@ -1,0 +1,21 @@
+diagrammar: 1
+type: sequence
+title: Order with fragment
+
+participants:
+  - id: user
+    label: User
+    kind: actor
+  - id: api
+    label: API
+  - id: db
+    label: Orders DB
+    kind: database
+
+messages:
+  - { from: user, to: api, label: 'POST /orders' }
+  - fragment: alt
+    label: in stock
+    messages:
+      - { from: api, to: db, label: reserve }
+  - { from: api, to: user, label: '201 Created', style: return }

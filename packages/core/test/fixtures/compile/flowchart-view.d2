@@ -1,0 +1,26 @@
+direction: down
+
+vars: {
+  d2-config: {
+    layout-engine: dagre
+  }
+}
+
+"start": {
+  shape: oval
+  label: "Start"
+}
+"check": {
+  shape: rectangle
+  label: "Check stock"
+}
+"ship": {
+  shape: rectangle
+  label: "Ship order"
+  style.opacity: 0.25
+}
+
+"start" -> "check"
+"check" -> "ship": "yes" {
+  style.opacity: 0.25
+}

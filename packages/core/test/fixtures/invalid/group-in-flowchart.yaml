@@ -1,0 +1,9 @@
+diagrammar: 1
+type: flowchart
+groups:
+  - id: g1
+  - id: g2
+    in: g1
+nodes:
+  - id: a
+    in: g2

@@ -1,0 +1,36 @@
+diagrammar: 1
+type: flowchart
+title: Order fulfilment
+groups:
+  - id: fulfilment
+    label: Fulfilment
+    style: { fill: '#fee' }
+nodes:
+  - id: start
+    label: Order received
+    shape: oval
+    in: fulfilment
+  - id: check
+    label: Check stock
+    shape: diamond
+    in: fulfilment
+  - id: ship
+    label: Ship order
+edges:
+  - { from: start, to: check }
+  - { id: yes, from: check, to: ship, label: 'yes' }
+notes:
+  - id: n1
+    at: check
+    side: right
+    width: 240
+    text: Checks the reservation ledger, not raw stock.
+callouts:
+  - id: c1
+    at: yes
+    number: 1
+    text: Happy path continues here.
+views:
+  - id: happy
+    title: Happy path
+    focus: [start, check, ship, yes]

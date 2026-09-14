@@ -1,0 +1,27 @@
+seq: {
+  shape: sequence_diagram
+  label: ""
+  "user": {
+    shape: person
+    label: "User"
+  }
+  "api": {
+    shape: rectangle
+    label: "API"
+  }
+  "db": {
+    shape: cylinder
+    label: "Orders DB"
+  }
+  "user" -> "api": "POST /orders"
+  "messages[1]": {
+    label: "alt: in stock"
+    "api" -> "db": "reserve"
+  }
+  "api" -> "user": "201 Created" {
+    style.stroke-dash: 3
+    target-arrowhead: {
+      shape: arrow
+    }
+  }
+}

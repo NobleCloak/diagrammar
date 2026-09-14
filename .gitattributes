@@ -1,0 +1,4 @@
+*.png -text
+*.svg -text
+*.d2 -text
+*.ttf -text

@@ -1,0 +1,40 @@
+# Dependabot cannot run and this file cannot be validated by GitHub until this
+# repository has a remote and is pushed there — that has not happened yet and
+# will not happen during this plan. Nothing below takes effect locally.
+version: 2
+updates:
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    cooldown:
+      default-days: 7
+    groups:
+      engines: # WASM bumps can move goldens; review alone
+        patterns:
+          - '@d2lang/d2'
+          - '@resvg/*'
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+        exclude-patterns:
+          - '@d2lang/d2'
+          - '@resvg/*'
+      majors:
+        update-types:
+          - major
+        exclude-patterns:
+          - '@d2lang/d2'
+          - '@resvg/*'
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns:
+          - '*'

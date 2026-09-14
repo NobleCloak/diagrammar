@@ -1,0 +1,12 @@
+diagrammar: 1
+type: sequence
+title: Minimal sequence
+
+participants:
+  - id: user
+    label: User
+  - id: api
+    label: API
+
+messages:
+  - { from: user, to: api, label: "GET /health", style: sync }

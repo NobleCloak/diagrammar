@@ -1,0 +1,88 @@
+diagrammar: 1
+type: flowchart
+title: Annotated order fulfilment
+direction: down
+
+groups:
+  - id: intake
+    label: Intake
+  - id: fulfilment
+    label: Fulfilment
+
+nodes:
+  - id: start
+    label: Order received
+    shape: oval
+    in: intake
+    description: |
+      Submitted via web or MCP.
+  - id: check
+    label: Check inventory
+    shape: diamond
+    in: intake
+    description: |
+      Checks the reservation ledger, not raw stock.
+  - id: backorder
+    label: Create backorder
+    shape: rect
+    in: fulfilment
+    description: |
+      Notifies the customer of the delay and reserves the next inbound shipment.
+  - id: ship
+    label: Ship order
+    shape: rect
+    in: fulfilment
+    description: |
+      Hands the order to the configured carrier integration.
+  - id: done
+    label: Order fulfilled
+    shape: oval
+    in: fulfilment
+    description: |
+      Terminal state; triggers the fulfilment webhook.
+
+edges:
+  - { id: yes, from: check, to: ship, label: "in stock" }
+  - { id: no, from: check, to: backorder, label: "out of stock" }
+  - { from: start, to: check }
+  - { from: backorder, to: ship }
+  - { from: ship, to: done }
+
+notes:
+  - id: n1
+    at: check
+    side: right
+    text: Checks the reservation ledger, not raw stock.
+  - id: n2
+    at: yes
+    side: bottom
+    width: 200
+    text: Happy path — most orders take this branch.
+  - id: n3
+    text: This diagram omits payment capture, which happens before order creation.
+
+callouts:
+  - id: c1
+    at: start
+    number: 1
+    text: Entry point for both the web UI and MCP-driven agents.
+  - id: c2
+    at: yes
+    number: 2
+    text: Fast path — no human involved.
+  - id: c3
+    at: check
+    number: 3
+    text: Inventory hold is placed atomically with this check.
+  - id: c4
+    at: done
+    number: 4
+    text: Terminal state — triggers the fulfilment webhook.
+
+views:
+  - id: happy
+    title: Happy path
+    focus: [start, check, ship, yes, done]
+  - id: backorder-path
+    title: Backorder path
+    focus: [start, check, backorder, no, ship, done]

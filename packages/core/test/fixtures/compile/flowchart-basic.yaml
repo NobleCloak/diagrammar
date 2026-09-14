@@ -1,0 +1,18 @@
+diagrammar: 1
+type: flowchart
+title: Basic Flow
+direction: down
+layout: dagre
+
+nodes:
+  - id: start
+    label: Start
+    shape: oval
+  - id: check
+    label: Check stock
+  - id: ship
+    label: Ship order
+
+edges:
+  - { from: start, to: check }
+  - { id: yes, from: check, to: ship, label: 'yes' }

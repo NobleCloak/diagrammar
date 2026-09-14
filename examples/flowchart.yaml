@@ -1,0 +1,38 @@
+diagrammar: 1
+type: flowchart
+title: Order fulfilment
+direction: down
+
+nodes:
+  - id: start
+    label: Order received
+    shape: oval
+    description: |
+      Submitted via web or MCP.
+  - id: check
+    label: Check inventory
+    shape: diamond
+    description: |
+      Checks the reservation ledger, not raw stock.
+  - id: backorder
+    label: Create backorder
+    shape: rect
+    description: |
+      Notifies the customer of the delay and reserves the next inbound shipment.
+  - id: ship
+    label: Ship order
+    shape: rect
+    description: |
+      Hands the order to the configured carrier integration.
+  - id: done
+    label: Order fulfilled
+    shape: oval
+    description: |
+      Terminal state; triggers the fulfilment webhook.
+
+edges:
+  - { id: yes, from: check, to: ship, label: "in stock" }
+  - { id: no, from: check, to: backorder, label: "out of stock" }
+  - { from: start, to: check }
+  - { from: backorder, to: ship }
+  - { from: ship, to: done }

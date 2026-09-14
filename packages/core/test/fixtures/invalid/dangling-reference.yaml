@@ -1,0 +1,6 @@
+diagrammar: 1
+type: flowchart
+nodes:
+  - id: start
+edges:
+  - { from: start, to: shp }

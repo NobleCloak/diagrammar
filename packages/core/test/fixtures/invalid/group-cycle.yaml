@@ -1,0 +1,10 @@
+diagrammar: 1
+type: architecture
+groups:
+  - id: g1
+    in: g2
+  - id: g2
+    in: g1
+nodes:
+  - id: a
+    in: g1

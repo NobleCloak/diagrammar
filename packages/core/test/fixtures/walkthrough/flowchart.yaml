@@ -1,0 +1,29 @@
+diagrammar: 1
+type: flowchart
+title: Order fulfilment
+direction: down
+layout: dagre
+
+nodes:
+  - id: start
+    label: Order received
+    shape: oval
+    description: |
+      Submitted via web or MCP.
+  - id: check
+    label: Check stock
+  - id: ship
+    label: Ship order
+
+edges:
+  - { from: start, to: check }
+  - { id: yes, from: check, to: ship, label: 'yes', description: 'Only when stock is available.' }
+
+callouts:
+  - id: c1
+    at: start
+    number: 1
+    text: Entry point for every order.
+  - id: c2
+    at: yes
+    text: Happy path continues here.

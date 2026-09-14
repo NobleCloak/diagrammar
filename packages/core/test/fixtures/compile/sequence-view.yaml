@@ -1,0 +1,22 @@
+diagrammar: 1
+type: sequence
+title: Order request
+
+participants:
+  - id: user
+    label: User
+    kind: actor
+  - id: api
+    label: API
+  - id: db
+    label: Orders DB
+    kind: database
+
+messages:
+  - { id: m1, from: user, to: api, label: 'POST /orders' }
+  - { from: api, to: db, label: 'reserve', style: async }
+
+views:
+  - id: request-only
+    title: Request only
+    focus: [user, api, m1]

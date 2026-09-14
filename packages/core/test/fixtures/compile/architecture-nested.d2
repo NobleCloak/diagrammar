@@ -1,0 +1,30 @@
+direction: right
+
+vars: {
+  d2-config: {
+    layout-engine: tala
+  }
+}
+
+"warehouse": {
+  label: "Warehouse"
+}
+"warehouse"."fulfilment": {
+  label: "Fulfilment"
+}
+
+"gateway": {
+  shape: rectangle
+  label: "API Gateway"
+}
+"warehouse"."fulfilment"."worker": {
+  shape: person
+  label: "Pick Worker"
+}
+"warehouse"."fulfilment"."db": {
+  shape: cylinder
+  label: "Orders DB"
+}
+
+"gateway" -> "warehouse"."fulfilment"."worker"
+"warehouse"."fulfilment"."worker" -> "warehouse"."fulfilment"."db": "reserve stock"

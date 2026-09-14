@@ -1,0 +1,30 @@
+direction: down
+
+vars: {
+  d2-config: {
+    layout-engine: dagre
+  }
+}
+
+"fulfilment": {
+  label: "Fulfilment"
+}
+
+"fulfilment"."start": {
+  shape: oval
+  label: "Order received"
+  style.fill: "#eef"
+}
+"fulfilment"."check": {
+  shape: rectangle
+  label: "Check stock"
+}
+"ship": {
+  shape: rectangle
+  label: "Ship order"
+}
+
+"fulfilment"."start" -> "fulfilment"."check"
+"fulfilment"."check" -> "ship": "yes" {
+  style.stroke-dash: 3
+}

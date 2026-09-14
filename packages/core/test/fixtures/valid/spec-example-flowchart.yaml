@@ -1,0 +1,23 @@
+diagrammar: 1
+type: flowchart
+groups:
+  - id: fulfilment
+    label: Fulfilment
+nodes:
+  - id: start
+    label: Order received
+    shape: oval
+    in: fulfilment
+    description: |
+      Submitted via web or MCP.
+    style:
+      fill: '#eef'
+  - id: check
+    label: Check stock
+    shape: diamond
+    in: fulfilment
+  - id: ship
+    label: Ship order
+edges:
+  - { from: start, to: check }
+  - { id: yes, from: check, to: ship, label: 'yes', style: { dashed: true } }

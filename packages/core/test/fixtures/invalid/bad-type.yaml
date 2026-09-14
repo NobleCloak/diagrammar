@@ -1,0 +1,4 @@
+diagrammar: 1
+type: flowchar
+nodes:
+  - id: start

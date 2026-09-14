@@ -1,0 +1,20 @@
+diagrammar: 1
+type: architecture
+groups:
+  - id: warehouse
+    label: Warehouse
+  - id: fulfilment
+    label: Fulfilment
+    in: warehouse
+nodes:
+  - id: api
+    shape: rect
+  - id: db
+    shape: cylinder
+    in: fulfilment
+  - id: queue
+    shape: queue
+    in: warehouse
+edges:
+  - { from: api, to: db }
+  - { from: db, to: queue }

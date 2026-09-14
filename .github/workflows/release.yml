@@ -1,0 +1,57 @@
+# Release: Changesets-driven versioning and npm publish with provenance.
+#
+# Gated on CI (I7): this triggers on the CI workflow's `workflow_run`
+# completing on `main`, rather than on a bare push to `main`, so a release
+# never runs (and never opens/updates the "Version Packages" PR) against a
+# commit whose CI run failed or is still in flight. `head_sha`/`head_branch`
+# below pin the checkout and the concurrency group to the exact commit CI
+# just finished checking, not whatever `main` happens to point at when this
+# job starts.
+#
+# This workflow cannot run yet: this repository has no remote configured and
+# nothing has been pushed to GitHub (Plan 07, Task 6). It is committed now so
+# it exists at the v1 milestone.
+name: Release
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: release-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  release:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Create release pull request or publish
+        uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        with:
+          version-script: bun run changeset version
+          publish-script: bun run release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

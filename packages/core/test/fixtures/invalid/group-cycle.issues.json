@@ -1,0 +1,12 @@
+[
+  {
+    "path": "groups[0].in",
+    "message": "cycle detected in group parenting: g1 -> g2 -> g1",
+    "line": 5
+  },
+  {
+    "path": "groups[1].in",
+    "message": "cycle detected in group parenting: g2 -> g1 -> g2",
+    "line": 7
+  }
+]

@@ -1,0 +1,23 @@
+diagrammar: 1
+type: flowchart
+title: Basic Flow
+direction: down
+layout: dagre
+
+nodes:
+  - id: start
+    label: Start
+    shape: oval
+  - id: check
+    label: Check stock
+  - id: ship
+    label: Ship order
+
+edges:
+  - { id: go, from: start, to: check }
+  - { id: yes, from: check, to: ship, label: 'yes' }
+
+views:
+  - id: happy
+    title: Happy path
+    focus: [start, check, go]

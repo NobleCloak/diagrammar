@@ -1,0 +1,29 @@
+diagrammar: 1
+type: sequence
+title: Order with nested fragment
+
+participants:
+  - id: user
+    label: User
+    kind: actor
+  - id: api
+    label: API
+  - id: db
+    label: Orders DB
+    kind: database
+
+messages:
+  - { from: user, to: api, label: 'POST /orders' }
+  - fragment: alt
+    label: in stock
+    messages:
+      - { from: api, to: db, label: 'reserve' }
+      - fragment: opt
+        label: backorder
+        messages:
+          - { from: api, to: db, label: 'flag backorder' }
+
+views:
+  - id: no-backorder
+    title: No backorder
+    focus: [user, api, db, 'messages[0]', 'messages[1]', 'messages[1].messages[0]']

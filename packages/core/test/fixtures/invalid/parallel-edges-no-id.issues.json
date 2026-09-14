@@ -1,0 +1,4 @@
+[
+  { "path": "edges[0]", "message": "ambiguous edge \"a->b\"", "line": 7 },
+  { "path": "edges[1]", "message": "ambiguous edge \"a->b\"", "line": 8 }
+]

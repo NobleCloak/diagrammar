@@ -1,0 +1,30 @@
+diagrammar: 1
+type: sequence
+title: Order approval
+
+participants:
+  - id: user
+    label: User
+    kind: actor
+  - id: api
+    label: API
+  - id: db
+    label: Orders DB
+    kind: database
+
+messages:
+  - { from: user, to: api, label: 'POST /orders' }
+  - fragment: alt
+    label: in stock
+    messages:
+      - { from: api, to: db, label: 'reserve stock' }
+      - fragment: opt
+        label: backorder
+        messages:
+          - { from: api, to: db, label: 'flag backorder' }
+
+callouts:
+  - id: c1
+    at: user
+    number: 1
+    text: Entry point for every order.

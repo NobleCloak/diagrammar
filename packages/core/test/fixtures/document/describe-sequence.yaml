@@ -1,0 +1,23 @@
+diagrammar: 1
+type: sequence
+title: Golden sequence
+
+participants:
+  - id: user
+    label: User
+  - id: api
+    label: API
+  - id: db
+    label: Database
+
+messages:
+  - { id: m1, from: user, to: api, label: "POST /orders" }
+  - { from: api, to: db, label: check stock }
+  - fragment: alt
+    label: in stock
+    messages:
+      - { from: db, to: api, label: confirmed }
+
+notes:
+  - at: m1
+    text: Entry point.

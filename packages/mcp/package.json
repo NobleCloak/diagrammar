@@ -1,0 +1,56 @@
+{
+  "name": "@noblecloak/diagrammar-mcp",
+  "version": "0.1.0",
+  "description": "Streamable HTTP MCP server for Diagrammar diagrams.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/NobleCloak/diagrammar#readme",
+  "bugs": "https://github.com/NobleCloak/diagrammar/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NobleCloak/diagrammar.git",
+    "directory": "packages/mcp"
+  },
+  "keywords": [
+    "diagram",
+    "mcp",
+    "model-context-protocol",
+    "agent",
+    "diagram-as-code"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "@noblecloak/diagrammar-core": "^0.1.0",
+    "hono": "4.13.7",
+    "@hono/node-server": "2.1.1",
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "zod": "4.6.2"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "tsdown": "0.23.0",
+    "@types/node": "^24.0.0"
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "name": "@noblecloak/diagrammar",
+  "version": "0.1.0",
+  "description": "CLI for authoring, validating, and rendering Diagrammar diagrams.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/NobleCloak/diagrammar#readme",
+  "bugs": "https://github.com/NobleCloak/diagrammar/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NobleCloak/diagrammar.git",
+    "directory": "packages/cli"
+  },
+  "keywords": [
+    "diagram",
+    "cli",
+    "d2",
+    "svg",
+    "png",
+    "diagram-as-code"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "bin": {
+    "diagrammar": "./dist/bin.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/main.d.mts",
+      "default": "./dist/main.mjs"
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "@noblecloak/diagrammar-core": "^0.1.0",
+    "@noblecloak/diagrammar-mcp": "^0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "tsdown": "0.23.0",
+    "@types/node": "^24.0.0"
+  }
+}

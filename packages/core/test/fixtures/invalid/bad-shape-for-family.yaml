@@ -1,0 +1,5 @@
+diagrammar: 1
+type: flowchart
+nodes:
+  - id: a
+    shape: cylinder
