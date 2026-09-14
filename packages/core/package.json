@@ -1,6 +1,6 @@
 {
   "name": "@noblecloak/diagrammar-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Parse, validate, edit, and render Diagrammar YAML diagrams to SVG/PNG/Markdown.",
   "type": "module",
   "license": "Apache-2.0",

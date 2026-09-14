@@ -1,5 +1,11 @@
 # @noblecloak/diagrammar-core
 
+## 0.1.1
+
+### Patch Changes
+
+- f8c77f3: Releases are now published from CI via npm trusted publishing (OIDC) with provenance attestations. No package code changes.
+
 ## 0.1.0
 
 ### Minor Changes
