@@ -112,7 +112,6 @@ function describeSequenceItems(items: SequenceItem[], out: DescribedElement[]): 
 }
 
 const DIAGRAM_TYPES = ['flowchart', 'architecture', 'sequence'] as const;
-const THEMES = ['light', 'dark'] as const;
 const LAYOUT_ENGINES = ['dagre', 'elk', 'tala'] as const;
 const DIRECTIONS = ['down', 'right', 'up', 'left'] as const;
 
@@ -155,7 +154,7 @@ function readPartialMeta(
       {
         type: oneOf(DIAGRAM_TYPES, record.type),
         title: typeof record.title === 'string' ? record.title : undefined,
-        theme: oneOf(THEMES, record.theme),
+        theme: typeof record.theme === 'string' ? record.theme : undefined,
         layout: oneOf(LAYOUT_ENGINES, record.layout),
         direction: oneOf(DIRECTIONS, record.direction),
       },

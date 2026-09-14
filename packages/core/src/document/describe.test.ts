@@ -203,11 +203,11 @@ vitestDescribe('describe — invalid input', () => {
     );
   });
 
-  it('drops an invalid enum-like meta field instead of returning a bogus-typed value (M10)', () => {
+  it('drops an invalid enum-like meta field, but echoes theme as a free reference string (M10)', () => {
     const result = describe('diagrammar: 1\ntype: bogus\ntheme: neon\ntitle: Broken\n');
     expect(result.valid).toBe(false);
     expect(result.type).toBeUndefined();
-    expect(result.theme).toBeUndefined();
+    expect(result.theme).toBe('neon');
     expect(result.title).toBe('Broken');
   });
 });

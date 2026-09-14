@@ -1,0 +1,306 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "diagrammar-theme": {
+      "type": "number",
+      "const": 1
+    },
+    "base": {
+      "type": "string",
+      "enum": [
+        "light",
+        "dark",
+        "colorblind",
+        "mono"
+      ]
+    },
+    "palette": {
+      "type": "object",
+      "properties": {
+        "background": {
+          "type": "string"
+        },
+        "fill": {
+          "type": "string"
+        },
+        "stroke": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "groupFill": {
+          "type": "string"
+        },
+        "edge": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "defaults": {
+      "type": "object",
+      "properties": {
+        "nodes": {
+          "type": "object",
+          "properties": {
+            "fill": {
+              "type": "string"
+            },
+            "stroke": {
+              "type": "string"
+            },
+            "strokeWidth": {
+              "type": "number"
+            },
+            "dashed": {
+              "type": "boolean"
+            },
+            "bold": {
+              "type": "boolean"
+            },
+            "italic": {
+              "type": "boolean"
+            },
+            "fontColor": {
+              "type": "string"
+            },
+            "opacity": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        },
+        "groups": {
+          "type": "object",
+          "properties": {
+            "fill": {
+              "type": "string"
+            },
+            "stroke": {
+              "type": "string"
+            },
+            "strokeWidth": {
+              "type": "number"
+            },
+            "dashed": {
+              "type": "boolean"
+            },
+            "bold": {
+              "type": "boolean"
+            },
+            "italic": {
+              "type": "boolean"
+            },
+            "fontColor": {
+              "type": "string"
+            },
+            "opacity": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        },
+        "edges": {
+          "type": "object",
+          "properties": {
+            "fill": {
+              "type": "string"
+            },
+            "stroke": {
+              "type": "string"
+            },
+            "strokeWidth": {
+              "type": "number"
+            },
+            "dashed": {
+              "type": "boolean"
+            },
+            "bold": {
+              "type": "boolean"
+            },
+            "italic": {
+              "type": "boolean"
+            },
+            "fontColor": {
+              "type": "string"
+            },
+            "opacity": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        },
+        "participants": {
+          "type": "object",
+          "properties": {
+            "fill": {
+              "type": "string"
+            },
+            "stroke": {
+              "type": "string"
+            },
+            "strokeWidth": {
+              "type": "number"
+            },
+            "dashed": {
+              "type": "boolean"
+            },
+            "bold": {
+              "type": "boolean"
+            },
+            "italic": {
+              "type": "boolean"
+            },
+            "fontColor": {
+              "type": "string"
+            },
+            "opacity": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        },
+        "shapes": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "enum": [
+              "oval",
+              "rect",
+              "diamond",
+              "document",
+              "parallelogram",
+              "hexagon",
+              "cylinder",
+              "queue",
+              "cloud",
+              "person",
+              "package"
+            ]
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "fill": {
+                "type": "string"
+              },
+              "stroke": {
+                "type": "string"
+              },
+              "strokeWidth": {
+                "type": "number"
+              },
+              "dashed": {
+                "type": "boolean"
+              },
+              "bold": {
+                "type": "boolean"
+              },
+              "italic": {
+                "type": "boolean"
+              },
+              "fontColor": {
+                "type": "string"
+              },
+              "opacity": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "kinds": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "enum": [
+              "actor",
+              "service",
+              "database",
+              "queue"
+            ]
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "fill": {
+                "type": "string"
+              },
+              "stroke": {
+                "type": "string"
+              },
+              "strokeWidth": {
+                "type": "number"
+              },
+              "dashed": {
+                "type": "boolean"
+              },
+              "bold": {
+                "type": "boolean"
+              },
+              "italic": {
+                "type": "boolean"
+              },
+              "fontColor": {
+                "type": "string"
+              },
+              "opacity": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "messages": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "async",
+              "return"
+            ]
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "fill": {
+                "type": "string"
+              },
+              "stroke": {
+                "type": "string"
+              },
+              "strokeWidth": {
+                "type": "number"
+              },
+              "dashed": {
+                "type": "boolean"
+              },
+              "bold": {
+                "type": "boolean"
+              },
+              "italic": {
+                "type": "boolean"
+              },
+              "fontColor": {
+                "type": "string"
+              },
+              "opacity": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "diagrammar-theme",
+    "base"
+  ],
+  "additionalProperties": false
+}

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { generateJsonSchema } from './json-schema.js';
+import { generateJsonSchema, generateThemeJsonSchema } from './json-schema.js';
 
 describe('generateJsonSchema', () => {
   it('produces a draft 2020-12 object schema with the discriminated union inline', () => {
@@ -24,6 +24,17 @@ describe('committed schema/diagrammar-v1.json', () => {
   it('matches a fresh generation (no drift)', () => {
     const committed = readFileSync(committedPath, 'utf8');
     const fresh = `${JSON.stringify(generateJsonSchema(), null, 2)}\n`;
+    expect(committed).toBe(fresh);
+  });
+});
+
+describe('committed schema/diagrammar-theme-v1.json', () => {
+  it('matches a fresh generation (no drift)', () => {
+    const committed = readFileSync(
+      join(here, '..', '..', 'schema', 'diagrammar-theme-v1.json'),
+      'utf8',
+    );
+    const fresh = `${JSON.stringify(generateThemeJsonSchema(), null, 2)}\n`;
     expect(committed).toBe(fresh);
   });
 });

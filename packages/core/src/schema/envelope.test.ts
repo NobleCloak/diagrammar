@@ -36,6 +36,21 @@ describe('envelope enums', () => {
   });
 });
 
+describe('ThemeSchema (spec §3.1)', () => {
+  it.each(['light', 'dark', 'colorblind', 'mono'])('accepts preset %s', (name) => {
+    expect(ThemeSchema.safeParse(name).success).toBe(true);
+  });
+  it.each(['./themes/house.yaml', 'house.yml', '../shared/t.yaml'])('accepts path %s', (p) => {
+    expect(ThemeSchema.safeParse(p).success).toBe(true);
+  });
+  it('rejects an unknown bare name with a message naming the presets', () => {
+    const result = ThemeSchema.safeParse('neon');
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.error.issues[0]?.message).toContain('light, dark, colorblind, mono');
+  });
+});
+
 describe('IdSchema', () => {
   it('accepts letters, digits, underscore, and hyphen (not leading)', () => {
     for (const value of ['start', 'Check_2', '_private', 'order-fulfilment', 'a1']) {

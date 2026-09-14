@@ -6,6 +6,7 @@ bun.lock
 spikes
 **/*.ttf
 packages/core/schema/diagrammar-v1.json
+packages/core/schema/diagrammar-theme-v1.json
 packages/*/test/fixtures/
 examples/**/*.yaml
 CLAUDE.md

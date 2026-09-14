@@ -7,6 +7,8 @@ import type {
   SequenceDiagram,
   SequenceItem,
 } from './types.js';
+import { normalizeRelativePath } from '../assets/paths.js';
+import { isPresetName } from '../theme/presets.js';
 
 /**
  * Spec §3.6 rules beyond the schema. Rule 7 ("family mismatch: nodes/edges
@@ -21,6 +23,7 @@ export function runSemanticRules(diagram: Diagram): ValidationIssue[] {
     ...checkDuplicateIds(diagram),
     ...checkReferences(diagram),
     ...checkDuplicateCalloutNumbers(diagram),
+    ...checkThemePath(diagram),
   ];
   if (diagram.type === 'sequence') {
     issues.push(...checkFragmentsNonEmpty(diagram));
@@ -296,4 +299,22 @@ function checkGroupParentFamily(diagram: GraphDiagram): ValidationIssue[] {
     }
   });
   return issues;
+}
+
+// --- Rule 10: a path-form theme is a well-formed relative path -------------
+
+/**
+ * Syntax only (spec §6.1): the schema already guarantees a path form looks
+ * like a path; this rejects absolute paths, drive letters, backslashes and
+ * null bytes. Whether the file exists is `checkThemeRef`'s job, because it
+ * needs an asset resolver and parsing stays synchronous.
+ */
+function checkThemePath(diagram: Diagram): ValidationIssue[] {
+  if (isPresetName(diagram.theme)) return [];
+  try {
+    normalizeRelativePath(diagram.theme);
+    return [];
+  } catch (error) {
+    return [{ path: 'theme', message: error instanceof Error ? error.message : String(error) }];
+  }
 }

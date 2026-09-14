@@ -14,6 +14,7 @@ import type {
 import type { Selector } from '../model/selectors.js';
 import { resolveSelector } from '../model/selectors.js';
 import type { ValidationIssue } from '../errors.js';
+import { ThemeSchema } from '../schema/envelope.js';
 import type {
   NodeInput,
   NoteInput,
@@ -387,7 +388,7 @@ export const OpSchema = z.discriminatedUnion('op', [
         title: z.string().nullable().optional(),
         direction: z.enum(['down', 'right', 'up', 'left']).optional(),
         layout: z.enum(['dagre', 'elk', 'tala']).optional(),
-        theme: z.enum(['light', 'dark']).optional(),
+        theme: ThemeSchema.optional(),
       }),
     })
     .strict(),

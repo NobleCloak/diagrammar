@@ -1,7 +1,12 @@
 export type DiagramType = 'flowchart' | 'architecture' | 'sequence';
 export type Direction = 'down' | 'right' | 'up' | 'left';
 export type LayoutEngine = 'dagre' | 'elk' | 'tala';
-export type Theme = 'light' | 'dark';
+/**
+ * A theme *reference* exactly as written in the file: a preset name
+ * (`light`, `dark`, `colorblind`, `mono`) or a relative path to a theme
+ * file (spec §3.1). Resolution to a `ResolvedTheme` happens in `render()`.
+ */
+export type Theme = string;
 
 export interface Style {
   fill?: string;

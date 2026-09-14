@@ -1,5 +1,7 @@
 import { z } from 'zod';
-import type { DiagramType, Direction, LayoutEngine, Theme } from '../model/types.js';
+import type { DiagramType, Direction, LayoutEngine } from '../model/types.js';
+import { isPathRef } from '../assets/paths.js';
+import { PRESET_NAMES, isPresetName } from '../theme/presets.js';
 
 const DIAGRAM_TYPES = [
   'flowchart',
@@ -14,8 +16,10 @@ export const DirectionSchema = z.enum(DIRECTIONS);
 const LAYOUT_ENGINES = ['dagre', 'elk', 'tala'] as const satisfies readonly LayoutEngine[];
 export const LayoutEngineSchema = z.enum(LAYOUT_ENGINES);
 
-const THEMES = ['light', 'dark'] as const satisfies readonly Theme[];
-export const ThemeSchema = z.enum(THEMES);
+/** Spec §3.1: a preset name, or anything containing `/` or ending in .yaml/.yml. */
+export const ThemeSchema = z.string().refine((value) => isPresetName(value) || isPathRef(value), {
+  message: `theme must be one of ${PRESET_NAMES.join(', ')} or a relative path to a .yaml theme file`,
+});
 
 /**
  * Every element-declared `id` (nodes, groups, edges, participants, messages,

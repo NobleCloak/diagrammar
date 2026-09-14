@@ -138,3 +138,33 @@ describe('render with themes', () => {
     expect(Buffer.from(a.bytes).equals(Buffer.from(b.bytes))).toBe(true);
   }, 30000);
 });
+
+const THEMED = `diagrammar: 1
+type: flowchart
+theme: ./themes/house.yaml
+nodes:
+  - { id: a }
+  - { id: b }
+edges:
+  - { from: a, to: b }
+`;
+
+describe('render with an in-file theme path', () => {
+  it('fails with asset_resolver_missing when no resolver is supplied', async () => {
+    await expect(render(THEMED, { format: 'svg' })).rejects.toMatchObject({
+      code: 'asset_resolver_missing',
+    });
+  }, 30000);
+
+  it('resolves the file’s own theme: path through the resolver', async () => {
+    const resolver = memoryResolver({ 'themes/house.yaml': HOUSE });
+    const result = await render(THEMED, { format: 'svg', resolver });
+    expect(result.svg).toContain('#123456');
+  }, 30000);
+
+  it('opts.theme wins over the file’s theme:', async () => {
+    const resolver = memoryResolver({ 'themes/house.yaml': HOUSE });
+    const result = await render(THEMED, { format: 'svg', resolver, theme: 'mono' });
+    expect(result.svg).not.toContain('#123456');
+  }, 30000);
+});

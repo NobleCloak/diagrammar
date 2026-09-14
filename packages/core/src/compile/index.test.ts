@@ -6,7 +6,7 @@ import { compile, createKeyMap, d2KeyFor, modelKeyFor, modelKeyForConnection } f
 import { compileAndRender } from '../engine/index.js';
 import type { Diagram, GraphDiagram, SequenceDiagram } from '../model/types.js';
 import type { LaidOutConnection } from '../engine/types.js';
-import { buildTheme, presetTheme } from '../theme/index.js';
+import { buildTheme, presetTheme, resolveTheme } from '../theme/index.js';
 
 function fixture(name: string, ext: 'yaml' | 'd2'): string {
   return readFileSync(
@@ -100,7 +100,7 @@ describe('compile', () => {
     const { d2 } = compile(model);
     const { laidOut } = await compileAndRender(d2, {
       layout: model.layout,
-      themeId: presetTheme(model.theme).d2ThemeId,
+      themeId: (await resolveTheme(model.theme, undefined)).d2ThemeId,
     });
     const ids = laidOut.shapes.map((s) => s.id);
     expect(ids).toEqual(expect.arrayContaining(['link', 'icon', 'label', 'style']));
@@ -140,7 +140,7 @@ describe('createKeyMap', () => {
     const { d2: rootD2 } = compile(model);
     const { laidOut: rootLaidOut } = await compileAndRender(rootD2, {
       layout: model.layout,
-      themeId: presetTheme(model.theme).d2ThemeId,
+      themeId: (await resolveTheme(model.theme, undefined)).d2ThemeId,
     });
     const rootKeyMap = createKeyMap(model, rootLaidOut);
     const rootKeys = rootLaidOut.connections.map((c) => rootKeyMap.connectionKey(c));
@@ -148,7 +148,7 @@ describe('createKeyMap', () => {
     const { d2: viewD2 } = compile(model, 'happy');
     const { laidOut: viewLaidOut } = await compileAndRender(viewD2, {
       layout: model.layout,
-      themeId: presetTheme(model.theme).d2ThemeId,
+      themeId: (await resolveTheme(model.theme, undefined)).d2ThemeId,
     });
     const viewKeyMap = createKeyMap(model, viewLaidOut);
     const viewKeys = viewLaidOut.connections.map((c) => viewKeyMap.connectionKey(c));
@@ -162,7 +162,7 @@ describe('createKeyMap', () => {
     const { d2 } = compile(model);
     const { laidOut } = await compileAndRender(d2, {
       layout: model.layout,
-      themeId: presetTheme(model.theme).d2ThemeId,
+      themeId: (await resolveTheme(model.theme, undefined)).d2ThemeId,
     });
     const keyMap = createKeyMap(model, laidOut);
     expect(keyMap.shapeKey('warehouse.fulfilment.db')).toBe('db');
@@ -177,14 +177,14 @@ describe('modelKeyForConnection', () => {
     const { d2: d2a } = compile(model);
     const { laidOut: laidOutA } = await compileAndRender(d2a, {
       layout: model.layout,
-      themeId: presetTheme(model.theme).d2ThemeId,
+      themeId: (await resolveTheme(model.theme, undefined)).d2ThemeId,
     });
     for (const conn of laidOutA.connections) modelKeyForConnection(model, conn);
 
     const { d2: d2b } = compile(model);
     const { laidOut: laidOutB } = await compileAndRender(d2b, {
       layout: model.layout,
-      themeId: presetTheme(model.theme).d2ThemeId,
+      themeId: (await resolveTheme(model.theme, undefined)).d2ThemeId,
     });
     const keys = laidOutB.connections.map((conn) => modelKeyForConnection(model, conn));
     expect(keys).toEqual(['start->check', 'yes']);

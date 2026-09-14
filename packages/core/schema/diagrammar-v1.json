@@ -20,11 +20,7 @@
           ]
         },
         "theme": {
-          "type": "string",
-          "enum": [
-            "light",
-            "dark"
-          ]
+          "type": "string"
         },
         "type": {
           "type": "string",
@@ -377,11 +373,7 @@
           ]
         },
         "theme": {
-          "type": "string",
-          "enum": [
-            "light",
-            "dark"
-          ]
+          "type": "string"
         },
         "type": {
           "type": "string",

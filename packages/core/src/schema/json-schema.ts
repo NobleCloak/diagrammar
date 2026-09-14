@@ -7,3 +7,5 @@ export function generateJsonSchema(): Record<string, unknown> {
     io: 'input',
   });
 }
+
+export { generateThemeJsonSchema } from '../theme/schema.js';
