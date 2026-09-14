@@ -6,7 +6,9 @@ import { compileAndRender } from './engine/index.js';
 import { applyOverlay } from './overlay/index.js';
 import type { LayoutSidecar } from './overlay/types.js';
 import { getRasterizer } from './raster/index.js';
-import type { Theme, LayoutEngine } from './model/types.js';
+import type { AssetResolver } from './assets/resolver.js';
+import { resolveTheme } from './theme/load.js';
+import type { LayoutEngine } from './model/types.js';
 
 export interface RenderOptions {
   /** Output format, default `png`. */
@@ -15,8 +17,17 @@ export interface RenderOptions {
   view?: string;
   /** Raster scale factor for PNG, 1 or 2, default 1. */
   scale?: 1 | 2;
-  /** Overrides the document's theme. */
-  theme?: Theme;
+  /**
+   * Overrides the document's `theme:`. A preset name or a relative theme
+   * path, resolved exactly like the file's own value (spec §3.1).
+   */
+  theme?: string;
+  /**
+   * Supplies theme files (and, in a later release, icons) named by relative
+   * path. Required whenever the document or `theme` uses the path form;
+   * `fileResolver(dirname(file))` is the usual choice. See spec §6.
+   */
+  resolver?: AssetResolver;
   /** Draw the callout legend, default true. */
   legend?: boolean;
   /** Include the compiled D2 text in the result. */
@@ -48,7 +59,10 @@ export interface RenderResult {
  * the engine layer. Malformed SVG reaching the overlay stage (missing
  * viewBox, no closing `</svg>`, no opening `<svg ...>` tag, or an empty
  * connection route) surfaces as `DiagrammarError` with code `overlay`,
- * thrown by the overlay layer.
+ * thrown by the overlay layer. Theme resolution (`opts.theme`, or the
+ * document's own `theme:`) surfaces as `DiagrammarError` with code
+ * `theme_invalid`, `asset_resolver_missing`, `asset_not_found`, or
+ * `asset_outside_base`, thrown by `resolveTheme()` before the engine runs.
  */
 export async function render(yaml: string, opts: RenderOptions = {}): Promise<RenderResult> {
   const parsed = parse(yaml);
@@ -56,12 +70,12 @@ export async function render(yaml: string, opts: RenderOptions = {}): Promise<Re
   const model = parsed.diagram;
 
   const format = opts.format ?? 'png';
-  const theme: Theme = opts.theme ?? model.theme;
+  const theme = await resolveTheme(opts.theme ?? model.theme, opts.resolver);
   const layout: LayoutEngine = model.layout;
   const legend = opts.legend ?? true;
 
-  const { d2 } = compile(model, opts.view);
-  const { svg, laidOut } = await compileAndRender(d2, { layout, theme });
+  const { d2 } = compile(model, opts.view, theme);
+  const { svg, laidOut } = await compileAndRender(d2, { layout, themeId: theme.d2ThemeId });
   const keyMap = createKeyMap(model, laidOut);
 
   const overlayResult = await applyOverlay(

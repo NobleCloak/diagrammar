@@ -15,6 +15,34 @@ export { validate } from './validate.js';
 export type { ValidationResult } from './validate.js';
 export { createDocument } from './create.js';
 
+export { fileResolver, memoryResolver, isPathRef, normalizeRelativePath } from './assets/index.js';
+export type { AssetResolver, FileResolverOptions } from './assets/index.js';
+export {
+  PRESETS,
+  PRESET_NAMES,
+  isPresetName,
+  presetTheme,
+  buildTheme,
+  mergeStyle,
+  parseThemeFile,
+  resolveTheme,
+  checkThemeRef,
+  ThemeFileSchema,
+  generateThemeJsonSchema,
+} from './theme/index.js';
+export type {
+  PresetName,
+  PresetSpec,
+  ThemeMode,
+  OverrideSlot,
+  Palette,
+  ThemeDefaults,
+  ResolvedTheme,
+  ThemeFileInput,
+  ThemeParseResult,
+  StyleTarget,
+} from './theme/index.js';
+
 export { render } from './render.js';
 export type { RenderOptions, RenderResult } from './render.js';
 export type { LayoutSidecar, LayoutEntry } from './overlay/types.js';

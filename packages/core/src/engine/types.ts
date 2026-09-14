@@ -1,6 +1,6 @@
-import type { LayoutEngine, Theme } from '../model/types.js';
+import type { LayoutEngine } from '../model/types.js';
 
-export type { LayoutEngine, Theme } from '../model/types.js';
+export type { LayoutEngine } from '../model/types.js';
 
 export interface Point {
   x: number;
@@ -33,7 +33,8 @@ export interface LaidOutDiagram {
 
 export interface EngineOptions {
   layout: LayoutEngine;
-  theme: Theme;
+  /** D2 built-in theme id (`ResolvedTheme.d2ThemeId`). */
+  themeId: number;
 }
 
 export interface EngineResult {

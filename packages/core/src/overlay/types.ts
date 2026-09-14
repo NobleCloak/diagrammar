@@ -1,6 +1,6 @@
 import type { ElementModel } from '../model/types.js';
 import type { LaidOutConnection } from '../engine/types.js';
-import type { Theme } from '../model/types.js';
+import type { ResolvedTheme } from '../theme/types.js';
 import type { Warning } from '../errors.js';
 
 /**
@@ -18,7 +18,7 @@ export interface LayoutEntry {
 export type LayoutSidecar = Record<string, LayoutEntry>;
 
 export interface OverlayOptions {
-  theme: Theme;
+  theme: ResolvedTheme;
   legend: boolean;
   view?: string;
 }

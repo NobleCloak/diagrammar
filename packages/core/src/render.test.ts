@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { render } from './render.js';
 import { parse } from './parse.js';
 import { compile } from './compile/index.js';
+import { memoryResolver } from './assets/resolver.js';
 
 const fixture = readFileSync(
   fileURLToPath(new URL('../test/fixtures/compile/flowchart-view.yaml', import.meta.url)),
@@ -87,5 +88,53 @@ describe('render (integration, real D2/resvg WASM)', () => {
   it('does not render a text element reading the literal "seq" for a sequence diagram\'s root container (X)', async () => {
     const result = await render(sequenceFixture, { format: 'svg' });
     expect(result.svg).not.toContain('>seq<');
+  }, 30000);
+});
+
+const HOUSE =
+  'diagrammar-theme: 1\nbase: light\npalette:\n  background: "#123456"\n  fill: "#abcdef"\n';
+const DARK_HOUSE = 'diagrammar-theme: 1\nbase: dark\npalette:\n  background: "#0b0b0b"\n';
+
+describe('render with themes', () => {
+  it('fails with asset_resolver_missing when a theme path is used without a resolver', async () => {
+    await expect(
+      render(fixture, { format: 'svg', theme: './themes/house.yaml' }),
+    ).rejects.toMatchObject({
+      code: 'asset_resolver_missing',
+    });
+  }, 30000);
+
+  it('applies a theme file through the resolver: palette colours reach the SVG', async () => {
+    const resolver = memoryResolver({ 'themes/house.yaml': HOUSE });
+    const result = await render(fixture, { format: 'svg', theme: './themes/house.yaml', resolver });
+    expect(result.svg).toContain('#123456');
+    expect(result.svg).toContain('#abcdef');
+  }, 30000);
+
+  it('a dark-based theme file uses the dark D2 theme and the overridden background', async () => {
+    const resolver = memoryResolver({ 'themes/dark.yaml': DARK_HOUSE });
+    const result = await render(fixture, { format: 'svg', theme: './themes/dark.yaml', resolver });
+    expect(result.svg).toContain('#0b0b0b');
+    expect(result.svg).not.toContain('#1E1E2E'); // D2 dark background replaced by the palette
+    expect(result.svg).toContain('#CDD6F4'); // D2 dark-theme text colour still present
+  }, 30000);
+
+  it('opts.theme accepts any preset and changes the output', async () => {
+    const light = await render(fixture, { format: 'svg' });
+    const cb = await render(fixture, { format: 'svg', theme: 'colorblind' });
+    expect(cb.svg).not.toBe(light.svg);
+  }, 30000);
+
+  it('rejects an unknown preset with theme_invalid', async () => {
+    await expect(render(fixture, { format: 'svg', theme: 'neon' })).rejects.toMatchObject({
+      code: 'theme_invalid',
+    });
+  }, 30000);
+
+  it('is deterministic with a theme file', async () => {
+    const resolver = memoryResolver({ 'themes/house.yaml': HOUSE });
+    const a = await render(fixture, { format: 'png', theme: './themes/house.yaml', resolver });
+    const b = await render(fixture, { format: 'png', theme: './themes/house.yaml', resolver });
+    expect(Buffer.from(a.bytes).equals(Buffer.from(b.bytes))).toBe(true);
   }, 30000);
 });

@@ -13,4 +13,13 @@ describe('public API surface (Plan 01 portion)', () => {
   it('shutdown resolves without throwing when no engine has been created yet', async () => {
     await expect(core.shutdown()).resolves.toBeUndefined();
   });
+
+  it('exports the theme and asset-resolver surface', () => {
+    expect(core.PRESET_NAMES).toEqual(['light', 'dark', 'colorblind', 'mono']);
+    expect(typeof core.fileResolver).toBe('function');
+    expect(typeof core.memoryResolver).toBe('function');
+    expect(typeof core.resolveTheme).toBe('function');
+    expect(typeof core.checkThemeRef).toBe('function');
+    expect(typeof core.generateThemeJsonSchema).toBe('function');
+  });
 });

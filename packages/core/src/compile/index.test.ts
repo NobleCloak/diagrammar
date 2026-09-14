@@ -98,7 +98,10 @@ describe('compile', () => {
       views: [],
     };
     const { d2 } = compile(model);
-    const { laidOut } = await compileAndRender(d2, { layout: model.layout, theme: model.theme });
+    const { laidOut } = await compileAndRender(d2, {
+      layout: model.layout,
+      themeId: presetTheme(model.theme).d2ThemeId,
+    });
     const ids = laidOut.shapes.map((s) => s.id);
     expect(ids).toEqual(expect.arrayContaining(['link', 'icon', 'label', 'style']));
   }, 30000);
@@ -137,7 +140,7 @@ describe('createKeyMap', () => {
     const { d2: rootD2 } = compile(model);
     const { laidOut: rootLaidOut } = await compileAndRender(rootD2, {
       layout: model.layout,
-      theme: model.theme,
+      themeId: presetTheme(model.theme).d2ThemeId,
     });
     const rootKeyMap = createKeyMap(model, rootLaidOut);
     const rootKeys = rootLaidOut.connections.map((c) => rootKeyMap.connectionKey(c));
@@ -145,7 +148,7 @@ describe('createKeyMap', () => {
     const { d2: viewD2 } = compile(model, 'happy');
     const { laidOut: viewLaidOut } = await compileAndRender(viewD2, {
       layout: model.layout,
-      theme: model.theme,
+      themeId: presetTheme(model.theme).d2ThemeId,
     });
     const viewKeyMap = createKeyMap(model, viewLaidOut);
     const viewKeys = viewLaidOut.connections.map((c) => viewKeyMap.connectionKey(c));
@@ -157,7 +160,10 @@ describe('createKeyMap', () => {
   it('shapeKey resolves real shapes to their model keys', async () => {
     const model = loadDiagram('architecture-nested') as GraphDiagram;
     const { d2 } = compile(model);
-    const { laidOut } = await compileAndRender(d2, { layout: model.layout, theme: model.theme });
+    const { laidOut } = await compileAndRender(d2, {
+      layout: model.layout,
+      themeId: presetTheme(model.theme).d2ThemeId,
+    });
     const keyMap = createKeyMap(model, laidOut);
     expect(keyMap.shapeKey('warehouse.fulfilment.db')).toBe('db');
     expect(keyMap.shapeKey('gateway')).toBe('gateway');
@@ -171,14 +177,14 @@ describe('modelKeyForConnection', () => {
     const { d2: d2a } = compile(model);
     const { laidOut: laidOutA } = await compileAndRender(d2a, {
       layout: model.layout,
-      theme: model.theme,
+      themeId: presetTheme(model.theme).d2ThemeId,
     });
     for (const conn of laidOutA.connections) modelKeyForConnection(model, conn);
 
     const { d2: d2b } = compile(model);
     const { laidOut: laidOutB } = await compileAndRender(d2b, {
       layout: model.layout,
-      theme: model.theme,
+      themeId: presetTheme(model.theme).d2ThemeId,
     });
     const keys = laidOutB.connections.map((conn) => modelKeyForConnection(model, conn));
     expect(keys).toEqual(['start->check', 'yes']);
