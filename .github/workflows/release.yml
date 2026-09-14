@@ -1,5 +1,11 @@
 # Release: Changesets-driven versioning and npm publish with provenance.
 #
+# Publishing uses npm trusted publishing (OIDC): each @noblecloak package on
+# npmjs.com lists this repo + this workflow file as its trusted publisher, so
+# no NPM_TOKEN secret exists. `id-token: write` below is what mints the OIDC
+# token; provenance is enabled once in .npmrc. Trusted publishing needs
+# npm >= 11.5.1, hence the explicit Node 24 setup before Bun.
+#
 # Gated on CI (I7): this triggers on the CI workflow's `workflow_run`
 # completing on `main`, rather than on a bare push to `main`, so a release
 # never runs (and never opens/updates the "Version Packages" PR) against a
@@ -7,10 +13,6 @@
 # below pin the checkout and the concurrency group to the exact commit CI
 # just finished checking, not whatever `main` happens to point at when this
 # job starts.
-#
-# This workflow cannot run yet: this repository has no remote configured and
-# nothing has been pushed to GitHub (Plan 07, Task 6). It is committed now so
-# it exists at the v1 milestone.
 name: Release
 
 on:
@@ -39,6 +41,11 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
 
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24'
+
       - name: Set up Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
@@ -54,4 +61,3 @@ jobs:
           publish-script: bun run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -7,11 +7,6 @@
 # (ubuntu-latest, Node 24) additionally runs the suite directly under Node
 # (bypassing Bun as the runner) so the "byte-identical goldens" claim is
 # verified under both runtimes, not just asserted.
-#
-# This workflow cannot run yet: this repository has no remote configured and
-# nothing has been pushed to GitHub (Plan 07, Task 5). It is committed now so
-# it exists at the v1 milestone; its first real execution happens once the
-# repo is created on GitHub and pushed.
 name: CI
 
 on:
