@@ -15,11 +15,12 @@ async function connectedClient() {
 }
 
 describe('resources', () => {
-  it('lists both resources', async () => {
+  it('lists all resources', async () => {
     const client = await connectedClient();
     const result = await client.listResources();
     expect(result.resources.map((r) => r.uri).sort()).toEqual([
       'diagrammar://guide',
+      'diagrammar://schema/theme-v1',
       'diagrammar://schema/v1',
     ]);
     await client.close();
@@ -40,6 +41,17 @@ describe('resources', () => {
     const result = await client.readResource({ uri: 'diagrammar://guide' });
     const content = result.contents[0] as { text: string };
     expect(content.text).toContain('Diagrammar authoring guide');
+    await client.close();
+  });
+
+  it('reads diagrammar://schema/theme-v1 as JSON', async () => {
+    const client = await connectedClient();
+    const result = await client.readResource({ uri: 'diagrammar://schema/theme-v1' });
+    const text = (result.contents[0] as { text: string }).text;
+    expect((JSON.parse(text) as { required?: string[] }).required).toEqual([
+      'diagrammar-theme',
+      'base',
+    ]);
     await client.close();
   });
 });

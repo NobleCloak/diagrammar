@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -201,4 +201,61 @@ describe('diagrammar_render', () => {
     expect(Object.keys(properties!)).toContain('outputPath');
     await client.close();
   });
+
+  it('renders a theme file referenced relative to the diagram path', async () => {
+    await mkdir(join(root, 'themes'), { recursive: true });
+    await writeFile(
+      join(root, 'themes', 'house.yaml'),
+      'diagrammar-theme: 1\nbase: light\npalette:\n  background: "#123456"\n',
+      'utf8',
+    );
+    await writeFile(
+      join(root, 't.yaml'),
+      'diagrammar: 1\ntype: flowchart\ntheme: ./themes/house.yaml\nnodes:\n  - { id: a }\n',
+      'utf8',
+    );
+    const client = await connectedClient({ root, noFs: false });
+    const result = await client.callTool({
+      name: 'diagrammar_render',
+      arguments: { path: 't.yaml', format: 'svg' },
+    });
+    expect(result.isError).toBeFalsy();
+    const content = result.content as { type: string; text: string }[];
+    expect(content[0]!.text).toContain('#123456');
+    await client.close();
+  }, 30000);
+
+  it('under --no-fs a theme path fails with asset_fs_disabled, not a crash', async () => {
+    const client = await connectedClient({ root: undefined, noFs: true });
+    const result = await client.callTool({
+      name: 'diagrammar_render',
+      arguments: {
+        source:
+          'diagrammar: 1\ntype: flowchart\ntheme: ./themes/house.yaml\nnodes:\n  - { id: a }\n',
+        format: 'svg',
+      },
+    });
+    expect(result.isError).toBe(true);
+    const content = result.content as { type: string; text: string }[];
+    expect(JSON.parse(content[0]!.text)).toMatchObject({ code: 'asset_fs_disabled' });
+    await client.close();
+  }, 30000);
+
+  it('accepts any preset for theme and never leaks the root on a bad theme path', async () => {
+    const client = await connectedClient({ root, noFs: false });
+    const ok = await client.callTool({
+      name: 'diagrammar_render',
+      arguments: { source: FLOWCHART, theme: 'colorblind', format: 'svg' },
+    });
+    expect(ok.isError).toBeFalsy();
+    const bad = await client.callTool({
+      name: 'diagrammar_render',
+      arguments: { source: FLOWCHART, theme: '../../etc/passwd.yaml', format: 'svg' },
+    });
+    expect(bad.isError).toBe(true);
+    const text = (bad.content as { text: string }[])[0]!.text;
+    expect(JSON.parse(text)).toMatchObject({ code: 'asset_outside_base' });
+    expect(text).not.toContain(root);
+    await client.close();
+  }, 30000);
 });

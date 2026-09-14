@@ -4,6 +4,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { render, walkthrough, type RenderOptions } from '@noblecloak/diagrammar-core';
 import {
   assertFsEnabled,
+  assetResolverFor,
   resolveInRoot,
   resolveSource,
   writeAtomic,
@@ -30,7 +31,12 @@ const commonShape = {
     .union([z.literal(1), z.literal(2)])
     .optional()
     .describe('Raster scale factor for PNG output, 1 or 2, default 1.'),
-  theme: z.enum(['light', 'dark']).optional().describe("Overrides the document's theme."),
+  theme: z
+    .string()
+    .optional()
+    .describe(
+      'Overrides the document\'s theme: a preset name (light, dark, colorblind, mono) or a relative path to a theme file, resolved like the file\'s own "theme:" key.',
+    ),
   legend: z.boolean().optional().describe('Draw the callout legend, default true.'),
   returnImage: z
     .boolean()
@@ -110,7 +116,7 @@ export function register(server: McpServer, ctx: ToolContext): void {
     },
     (args) =>
       withToolErrors(async () => {
-        const { text } = await resolveSource(ctx, args);
+        const { text, resolvedPath } = await resolveSource(ctx, args);
         const format = args.format ?? 'png';
         const returnImage = args.returnImage ?? true;
 
@@ -135,6 +141,7 @@ export function register(server: McpServer, ctx: ToolContext): void {
         if (args.scale !== undefined) options.scale = args.scale;
         if (args.theme !== undefined) options.theme = args.theme;
         if (args.legend !== undefined) options.legend = args.legend;
+        options.resolver = assetResolverFor(ctx, resolvedPath);
 
         const result = await render(text, options);
 

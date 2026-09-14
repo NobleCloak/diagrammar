@@ -282,11 +282,12 @@ describe('diagrammar MCP server (integration)', () => {
     await client.close();
   });
 
-  it('lists both resources', async () => {
+  it('lists all resources', async () => {
     const client = await connect(serverUrl);
     const result = await client.listResources();
     expect(result.resources.map((r) => r.uri).sort()).toEqual([
       'diagrammar://guide',
+      'diagrammar://schema/theme-v1',
       'diagrammar://schema/v1',
     ]);
     await client.close();

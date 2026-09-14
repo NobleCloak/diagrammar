@@ -26,4 +26,16 @@ describe('diagrammar_schema', () => {
     expect(content[1]!.text).toContain('Diagrammar authoring guide');
     await client.close();
   });
+
+  it('returns the theme-file schema for kind: "theme"', async () => {
+    const client = await connectedClient({ root: undefined, noFs: true });
+    const result = await client.callTool({
+      name: 'diagrammar_schema',
+      arguments: { kind: 'theme' },
+    });
+    const content = result.content as { type: string; text: string }[];
+    const schema = JSON.parse(content[0]!.text) as { required?: string[] };
+    expect(schema.required).toEqual(['diagrammar-theme', 'base']);
+    await client.close();
+  });
 });

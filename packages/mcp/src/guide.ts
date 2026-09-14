@@ -147,4 +147,14 @@ current hash no longer matches.
   { "op": "add", "path": "/nodes/-", "value": { "id": "review", "label": "Review order" } }
 ]
 \`\`\`
+
+## Themes
+
+Add "theme: dark" (presets: light, dark, colorblind, mono) or point at a
+theme file: "theme: ./themes/house.yaml" — a YAML file starting
+"diagrammar-theme: 1" with "base: <preset>", an optional "palette"
+(background, fill, stroke, text, groupFill, edge) and optional "defaults"
+(nodes/groups/edges/participants, plus per-shape "shapes", per-kind
+"kinds", and per-style "messages"). An element's own "style" always wins.
+Fetch the theme schema with diagrammar_schema { kind: "theme" }.
 `;
