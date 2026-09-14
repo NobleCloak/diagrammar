@@ -12,6 +12,15 @@ export interface YamlLoadResult {
   lineOf: (path: string) => number | undefined;
 }
 
+/** First line of each YAML parse error, with its line number, as issues. */
+export function yamlErrorsToIssues(doc: Document): ValidationIssue[] {
+  return doc.errors.map((error) => ({
+    path: '',
+    message: error.message.split('\n')[0] ?? error.message,
+    ...(error.linePos?.[0]?.line !== undefined ? { line: error.linePos[0].line } : {}),
+  }));
+}
+
 export function loadYaml(text: string): YamlLoadResult {
   const lineCounter = new LineCounter();
   // `keepSourceTokens: true` isn't needed by this module — it's kept here so
@@ -87,17 +96,7 @@ export function loadAndBuild(
   const { doc, value, lineOf } = loadYaml(yaml);
 
   if (doc.errors.length > 0) {
-    return {
-      ok: false,
-      // A YAML parse error's `message` can run to several lines (the
-      // offending snippet plus a caret pointer); only the first line is a
-      // human-readable summary, so that's all a ValidationIssue carries.
-      issues: doc.errors.map((error) => ({
-        path: '',
-        message: error.message.split('\n')[0] ?? error.message,
-        ...(error.linePos?.[0]?.line !== undefined ? { line: error.linePos[0].line } : {}),
-      })),
-    };
+    return { ok: false, issues: yamlErrorsToIssues(doc) };
   }
 
   const parsed = DiagramFileSchema.safeParse(value);
@@ -117,7 +116,7 @@ export function loadAndBuild(
   return { ok: true, diagram };
 }
 
-function withLine(
+export function withLine(
   issue: ValidationIssue,
   lineOf: (path: string) => number | undefined,
 ): ValidationIssue {

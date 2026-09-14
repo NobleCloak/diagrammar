@@ -41,7 +41,7 @@ import type {
  * re-copied through the same omit-if-undefined pattern used everywhere
  * else in this file.
  */
-function buildStyle(s: StyleInput): Style {
+export function buildStyle(s: StyleInput): Style {
   return {
     ...(s.fill !== undefined ? { fill: s.fill } : {}),
     ...(s.stroke !== undefined ? { stroke: s.stroke } : {}),
