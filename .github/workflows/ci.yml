@@ -30,9 +30,11 @@ jobs:
   # DCO: every commit in a pull request must carry a `Signed-off-by:` trailer
   # (git commit -s) — see CONTRIBUTING.md. Checked with plain git so there is
   # no third-party action to pin. Runs on pull_request only: pushes to main
-  # are merges of PRs that already passed this check.
+  # are merges of PRs that already passed this check. The Changesets
+  # "Version Packages" PR is exempt: its commit is authored by
+  # github-actions[bot] from release.yml and cannot be signed off.
   dco:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'changeset-release/')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
