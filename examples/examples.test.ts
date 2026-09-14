@@ -15,6 +15,7 @@ const EXAMPLES = [
   'architecture.yaml',
   'sequence.yaml',
   'annotated.yaml',
+  'themed.yaml',
 ] as const;
 
 suite('example files pass validate()', () => {
@@ -107,5 +108,14 @@ suite('example files describe() and parse() element counts', () => {
     expect(described.valid).toBe(true);
     expect(described.issues).toEqual([]);
     expect(described.views.map((v) => v.id).sort()).toEqual(['backorder-path', 'happy']);
+  });
+
+  it('themed.yaml references the house theme by relative path and has 5 nodes', () => {
+    const result = parse(loadExample('themed.yaml'));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.diagram.theme).toBe('./themes/house.yaml');
+    if (result.diagram.type === 'sequence') throw new Error('expected a graph diagram');
+    expect(result.diagram.nodes).toHaveLength(5);
   });
 });
