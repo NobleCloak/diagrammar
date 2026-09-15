@@ -131,7 +131,7 @@ diagrammar icons import aws <zip> --out <dir>
   §6.1.
 
 See [`docs/format-guide.md`](docs/format-guide.md) for the full YAML schema and
-[`docs/SKILL.md`](docs/SKILL.md) for an agent-facing authoring guide.
+[`plugin/skills/diagrammar/SKILL.md`](plugin/skills/diagrammar/SKILL.md) for an agent-facing authoring guide.
 
 ## MCP server
 

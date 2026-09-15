@@ -5,7 +5,7 @@ import path from 'node:path';
 import { parse, OpSchema, JsonPatchOpSchema, parseThemeFile } from '@noblecloak/diagrammar-core';
 
 // This suite keeps the three user/agent-facing docs (README.md,
-// docs/format-guide.md, docs/SKILL.md) honest: every fenced ```yaml block in
+// docs/format-guide.md, plugin/skills/diagrammar/SKILL.md) honest: every fenced ```yaml block in
 // them must be a complete, self-contained Diagrammar document that actually
 // parses — except a block whose text contains a `diagrammar-theme:` line,
 // which is validated as a theme file (`parseThemeFile`) instead. For ```json
@@ -24,7 +24,7 @@ const repoRoot = path.resolve(docsDir, '..');
 const DOC_FILES = [
   path.join(repoRoot, 'README.md'),
   path.join(docsDir, 'format-guide.md'),
-  path.join(docsDir, 'SKILL.md'),
+  path.join(repoRoot, 'plugin/skills/diagrammar/SKILL.md'),
 ];
 
 function extractFencedBlocks(markdown: string, lang: 'yaml' | 'json'): string[] {
