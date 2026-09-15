@@ -14,18 +14,19 @@ function reject(reason: string): never {
 const FORBIDDEN: ReadonlyArray<[RegExp, string]> = [
   [/<!DOCTYPE/i, 'DOCTYPE declarations are not allowed'],
   [/<!ENTITY/i, 'ENTITY declarations are not allowed'],
-  [/<script[\s/>]/i, '<script> is not allowed'],
-  [/<foreignObject[\s/>]/i, '<foreignObject> is not allowed'],
-  [/[\s/]on[a-z]+\s*=/i, 'event-handler attributes are not allowed'],
-  [/<style[\s/>]/i, '<style> is not allowed'],
+  [/<(?:[A-Za-z_][\w.-]*:)?script(?![\w.-])/i, '<script> is not allowed'],
+  [/<(?:[A-Za-z_][\w.-]*:)?foreignObject(?![\w.-])/i, '<foreignObject> is not allowed'],
+  [/(?<![\w.-])on[a-z]+\s*=/i, 'event-handler attributes are not allowed'],
+  [/<(?:[A-Za-z_][\w.-]*:)?style(?![\w.-])/i, '<style> is not allowed'],
 ];
 
 /**
  * Every href (prefixed or not) and xlink:href must be a same-document fragment.
- * Matches: quoted (single or double), unquoted, with optional namespace prefix.
- * Requires whitespace or / as delimiter before href (tag-soup parsing).
+ * Matches: quoted (single or double), unquoted, with any prefix or delimiter.
+ * Uses negative lookbehind to ensure href is a complete attribute name,
+ * not part of a longer name like data-href or href-x.
  */
-const HREF_RE = /[\s/](?:[A-Za-z_][\w.-]*:)?href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/gi;
+const HREF_RE = /(?<![\w.-])href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/gi;
 
 /**
  * The security boundary for icons (spec §5.3): applied at set build time and

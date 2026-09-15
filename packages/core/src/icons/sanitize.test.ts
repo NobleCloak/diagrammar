@@ -101,6 +101,14 @@ describe('sanitizeSvg rejections (icon_invalid)', () => {
     ['style with CSS hex escape', wrap('<style>a{}@\\69mport url(evil);</style>')],
     ['style with content', wrap('<style>.a{fill:red}</style>')],
     ['slash-delimited foreignObject', wrap('<foreignObject/>')],
+    ['quote-delimited external href (double)', wrap('<use a="b"href="http://evil/x.svg"/>')],
+    ['quote-delimited external href (single)', wrap("<use a='b'href='http://evil/x.svg'/>")],
+    ['namespace-prefixed script', wrap('<svg:script>1</svg:script>')],
+    ['namespace-prefixed style', wrap('<svg:style>.a{}</svg:style>')],
+    [
+      'truncated script tag at EOF',
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9 9"><script',
+    ],
   ])('rejects %s', (_label, svg) => {
     expect(() => sanitizeSvg(svg)).toThrowError(expect.objectContaining({ code: 'icon_invalid' }));
   });
@@ -111,6 +119,12 @@ describe('sanitizeSvg rejections (icon_invalid)', () => {
   });
   it('allows slash-delimited fragment hrefs', () => {
     expect(() => sanitizeSvg(wrap('<use/href="#p"/>'))).not.toThrow();
+  });
+  it('allows attributes with href in the name when preceded by a name character', () => {
+    expect(() => sanitizeSvg(wrap('<rect data-href="#x"/>'))).not.toThrow();
+  });
+  it('allows attributes with on in the name when preceded by a name character', () => {
+    expect(() => sanitizeSvg(wrap('<rect nonlinear="1"/>'))).not.toThrow();
   });
   it('rejects an icon over the byte cap, naming the cap', () => {
     const big = wrap(`<path d="${'M0 0 '.repeat(ICON_MAX_BYTES / 5)}"/>`);
