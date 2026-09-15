@@ -5,6 +5,7 @@ import { basename, dirname, isAbsolute, relative, resolve, sep } from 'node:path
 import {
   DiagrammarError,
   ValidationError,
+  isErrnoException,
   normalizeRelativePath,
   type AssetResolver,
   type IconRegistry,
@@ -245,10 +246,6 @@ export async function writeAtomic(
   } finally {
     await rm(tempPath, { force: true });
   }
-}
-
-function isErrnoException(err: unknown): err is NodeJS.ErrnoException {
-  return err instanceof Error && 'code' in err;
 }
 
 /**

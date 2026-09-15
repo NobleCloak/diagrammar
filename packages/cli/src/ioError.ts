@@ -1,6 +1,4 @@
-function isErrnoException(err: unknown): err is NodeJS.ErrnoException {
-  return err instanceof Error && 'code' in err;
-}
+import { isErrnoException } from '@noblecloak/diagrammar-core';
 
 /**
  * Maps a filesystem error to a short, readable message for a CLI command to

@@ -1,5 +1,10 @@
 import { resolve } from 'node:path';
-import { ConflictError, DiagrammarError, ValidationError } from '@noblecloak/diagrammar-core';
+import {
+  ConflictError,
+  DiagrammarError,
+  ValidationError,
+  isErrnoException,
+} from '@noblecloak/diagrammar-core';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 
 /** Maps a Node.js filesystem error `code` to a Diagrammar tool-error code. */
@@ -9,10 +14,6 @@ const NODE_ERRNO_CODE_MAP: Record<string, string> = {
   EACCES: 'forbidden',
   EPERM: 'forbidden',
 };
-
-function isErrnoException(err: unknown): err is NodeJS.ErrnoException {
-  return err instanceof Error && 'code' in err;
-}
 
 /**
  * Matches a Windows drive-letter path or a POSIX absolute path, stopping at

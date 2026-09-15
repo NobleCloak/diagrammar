@@ -19,7 +19,7 @@ every icon each one references. Exits 1 if any file has validation errors
 (or cannot be read), 0 otherwise.
 
 Options:
-  --icons <dir>   Register an extra icon-set directory (repeatable).
+  --icons <dir>   Register an extra icon-set directory, relative to the current directory (repeatable).
   --json          Print machine-readable JSON instead of human-readable text.
 
 Exit codes: 0 all files valid, 1 a validation or usage/IO error occurred.

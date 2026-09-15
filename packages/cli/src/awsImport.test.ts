@@ -80,6 +80,22 @@ describe('buildAwsIconSet', () => {
       }),
     ).toThrowError(expect.objectContaining({ code: 'icon_set_invalid' }));
   });
+  it('fails with icon_set_invalid and a message naming Arch_*/64/*.svg when only 48px variants exist', () => {
+    const only48pxZip = zipSync({
+      'Asset-Package_01312026/Architecture-Service-Icons_01312026/Arch_Compute/48/Arch_AWS-Lambda_48.svg':
+        strToU8(SVG('#f90')),
+      'Asset-Package_01312026/Architecture-Service-Icons_01312026/Arch_Storage/48/Arch_AWS-Backup_48.svg':
+        strToU8(SVG('#3f8624')),
+    });
+    expect(() =>
+      buildAwsIconSet(unzipSync(only48pxZip), { zipName: 'x.zip', sha256: 'a' }),
+    ).toThrowError(
+      expect.objectContaining({
+        code: 'icon_set_invalid',
+        message: expect.stringContaining('Arch_*/64/*.svg') as string,
+      }),
+    );
+  });
 });
 
 describe('importAwsZip', () => {

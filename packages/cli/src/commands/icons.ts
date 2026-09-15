@@ -14,7 +14,7 @@ export const help = `diagrammar icons <subcommand>
       Build a local "aws/" icon set from the official AWS Architecture Icons zip.
 
 Options:
-  --icons <dir>   Register an extra icon-set directory (repeatable).
+  --icons <dir>   Register an extra icon-set directory, relative to the current directory (repeatable).
   --json          Print machine-readable JSON.
 `;
 

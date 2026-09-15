@@ -13,7 +13,7 @@ Options:
   --host <addr>            Address to bind (default: 127.0.0.1).
   --no-fs                  Disable filesystem access entirely (pure render/edit service).
   --allow-origin <origin>  Additional allowed Origin header value (repeatable).
-  --icons <dir>            Register an extra icon-set directory (repeatable).
+  --icons <dir>            Register an extra icon-set directory, relative to the current directory (repeatable).
 `;
 
 export async function run(argv: string[]): Promise<number> {

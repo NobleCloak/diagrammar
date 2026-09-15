@@ -23,7 +23,7 @@ Options:
   --view <id>       Render a single named view instead of the root.
   --scale 1|2       PNG scale factor (default 1).
   --theme           Preset (light, dark, colorblind, mono) or a relative theme file path (default: from the file).
-  --icons <dir>     Register an extra icon-set directory (repeatable; Lucide and Simple Icons are always available).
+  --icons <dir>     Register an extra icon-set directory, relative to the current directory (repeatable; Lucide and Simple Icons are always available).
   --no-legend       Suppress the callout legend.
 `;
 

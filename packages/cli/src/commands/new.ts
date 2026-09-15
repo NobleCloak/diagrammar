@@ -1,5 +1,10 @@
 import { parseArgs } from 'node:util';
-import { createDocument, DiagramDocument, type DiagramType } from '@noblecloak/diagrammar-core';
+import {
+  createDocument,
+  DiagramDocument,
+  isErrnoException,
+  type DiagramType,
+} from '@noblecloak/diagrammar-core';
 import { seedRemovalOps, writeAtomic } from '@noblecloak/diagrammar-mcp';
 
 export const help = `diagrammar new <file> --type flowchart|architecture|sequence [--title "..."]
@@ -18,10 +23,6 @@ const VALID_TYPES: readonly DiagramType[] = ['flowchart', 'architecture', 'seque
 
 function isDiagramType(value: string): value is DiagramType {
   return (VALID_TYPES as readonly string[]).includes(value);
-}
-
-function isErrnoException(err: unknown): err is NodeJS.ErrnoException {
-  return err instanceof Error && 'code' in err;
 }
 
 export async function run(argv: string[]): Promise<number> {
