@@ -67,6 +67,31 @@ edge + label      N1 + N2 label text, B1 line + arrowhead, B6 endpoint fill
 `N1` and `N2` are usable as palette overrides; fills and strokes must be
 emitted as explicit `style.*` lines per element (spec §4.2 was amended).
 
+## Icon placement probe (third probe, same day, for plan 2)
+
+`themeID: 0`, dagre, one 24×24 data-URI SVG icon:
+
+```
+sequence actor (person) + rect with icon:   2 <image> elements — participants accept icon:
+sequence actor with shape: image:          1 <image>, actor laid out 128×128 — works too
+container (group) with icon:               1 <image> — groups accept icon:
+cylinder with icon / cloud with icon:      1 <image> each — special shapes fine
+shape: image with label:                   1 <image>, 128×128, label below
+shape: image WITHOUT icon:                 D2 error "image shape must include an icon field"
+300 KB icon (comment-padded):              renders (so the 256 KB sanitizer cap is ours, not D2's)
+```
+
+Conclusion: `participants[].icon` and `groups[].icon` are safe to ship; validation
+must reject `shape: image` without `icon` before D2 does (rule 11).
+
+Also checked the two upstream sets for plan 2 (npm, 2026-09-14): `lucide-static@1.46.0`
+has 2,102 SVGs (8.2 MB raw, each with a license comment, `width`/`height` and a `viewBox`)
+and `tags.json` with 1,838 alias lists; `simple-icons@16.31.0` has 3,460 SVGs (15 MB raw,
+`viewBox` only) with `data/simple-icons.json` carrying `slug` for every entry and `aliases.aka`
+for 149, and **contains no Amazon/AWS marks**. Neither set has any `<script>`,
+`<foreignObject>` or `href` — the sanitizer is belt-and-braces for them and the real guard
+for local SVGs.
+
 ## What was not tested
 
 - Icons on sequence-diagram participants (D2 actors). The design includes
