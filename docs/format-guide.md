@@ -96,8 +96,10 @@ nodes:
     icon: ./icons/custom.svg # local SVG, sanitized on load
 ```
 
-Local SVGs pass a sanitizer (no scripts, no external references, 256 KB cap)
-and every icon is embedded inline, so renders stay offline and byte-identical.
+Local SVGs pass a sanitizer (no scripts, `<foreignObject>`, `<style>` or
+event-handler attributes, no external references, DOCTYPE/ENTITY
+declarations rejected, 256 KB cap) and every icon is embedded inline, so
+renders stay offline and byte-identical.
 Simple Icons contains no Amazon/AWS marks; build a local `aws/` set from the
 official download with `diagrammar icons import aws <zip> --out ./icons/aws`
 and register it with `--icons ./icons/aws`, and search it with
