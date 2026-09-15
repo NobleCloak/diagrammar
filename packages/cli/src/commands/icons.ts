@@ -1,6 +1,8 @@
 import { parseArgs } from 'node:util';
 import { DiagrammarError } from '@noblecloak/diagrammar-core';
 import { registryWithDirs } from '@noblecloak/diagrammar-mcp';
+import { importAwsZip } from '../awsImport.js';
+import { describeIoError } from '../ioError.js';
 
 export const help = `diagrammar icons <subcommand>
 
@@ -83,11 +85,39 @@ async function runSearch(rest: string[]): Promise<number> {
   return 0;
 }
 
+async function runImport(rest: string[]): Promise<number> {
+  const [vendor, zipPath, ...more] = rest;
+  if (vendor !== 'aws') {
+    console.error(`icons import: unknown vendor "${vendor ?? ''}" (supported: aws)`);
+    return 1;
+  }
+  const { values } = parseArgs({
+    args: more,
+    options: { out: { type: 'string' } },
+    allowPositionals: false,
+  });
+  if (zipPath === undefined || values.out === undefined) {
+    console.error('icons import aws: usage: icons import aws <zip> --out <dir>');
+    return 1;
+  }
+  try {
+    const result = await importAwsZip(zipPath, values.out);
+    console.log(
+      `wrote ${result.count} icons to ${result.outDir} (register with --icons ${result.outDir}, reference as aws/<name>)`,
+    );
+    return 0;
+  } catch (err) {
+    console.error(`icons import aws: ${describeIoError(err, zipPath)}`);
+    return 1;
+  }
+}
+
 export async function run(argv: string[]): Promise<number> {
   const [sub, ...rest] = argv;
   try {
     if (sub === 'sets') return await runSets(rest);
     if (sub === 'search') return await runSearch(rest);
+    if (sub === 'import') return await runImport(rest);
   } catch (err) {
     if (err instanceof DiagrammarError) {
       console.error(`icons ${sub}: ${err.message}`);
