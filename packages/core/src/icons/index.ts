@@ -12,3 +12,4 @@ export {
 } from './set.js';
 export type { IconSetIndex } from './set.js';
 export { IconRegistry, rankMatches } from './registry.js';
+export { resolveIcons, checkIconRefs, iconSites } from './resolve.js';
