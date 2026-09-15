@@ -179,6 +179,10 @@ async function runStdio(base: McpAppConfig, streams: StdioStreams): Promise<numb
   const shutdown = new Promise<void>((resolveFn) => {
     resolveShutdown = resolveFn;
   });
+  // Set if shutdown fires before `resultPromise` resolves below (stdin EOF
+  // or a signal landing mid-connect), so the "serving over stdio" line
+  // never prints for a server that's already on its way down.
+  let shutdownFired = false;
   // The parent owns this process: when it closes our stdin (or sends a
   // signal) we are done. Whichever fires first wins (`onFirstEvent`
   // removes every listener before invoking this callback), and closing
@@ -191,6 +195,7 @@ async function runStdio(base: McpAppConfig, streams: StdioStreams): Promise<numb
       [process, 'SIGTERM'],
     ],
     () => {
+      shutdownFired = true;
       resultPromise
         .then((result) => result.close())
         .catch(() => {})
@@ -209,8 +214,12 @@ async function runStdio(base: McpAppConfig, streams: StdioStreams): Promise<numb
     throw err;
   }
 
-  const where = base.noFs ? 'no filesystem access' : `root: ${resolve(base.root ?? process.cwd())}`;
-  console.error(`diagrammar MCP server serving over stdio (${where})`);
+  if (!shutdownFired) {
+    const where = base.noFs
+      ? 'no filesystem access'
+      : `root: ${resolve(base.root ?? process.cwd())}`;
+    console.error(`diagrammar MCP server serving over stdio (${where})`);
+  }
 
   await shutdown;
   return 0;

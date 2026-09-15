@@ -22,11 +22,13 @@ import { SERVER_VERSION } from './app.js';
 function jsonRpcLines(stream: PassThrough): Promise<string[]> {
   return new Promise((resolveLines) => {
     let buffer = '';
-    stream.on('data', (chunk: Buffer) => {
+    const onData = (chunk: Buffer): void => {
       buffer += chunk.toString('utf8');
-      const lines = buffer.split('\n').filter((l) => l.trim() !== '');
-      if (lines.length > 0) resolveLines(lines);
-    });
+      if (!buffer.includes('\n')) return; // wait for a complete line, not just any bytes
+      stream.off('data', onData);
+      resolveLines(buffer.split('\n').filter((l) => l.trim() !== ''));
+    };
+    stream.on('data', onData);
   });
 }
 
@@ -119,10 +121,17 @@ describe('diagrammar mcp --stdio (end to end)', () => {
     await httpClient.connect(
       new StreamableHTTPClientTransport(new URL(`http://127.0.0.1:${http.port}/mcp`)) as Transport,
     );
-    const { client } = await spawnStdioClient(['--root', root]);
+    const { client, transport } = await spawnStdioClient(['--root', root]);
+    let stderr = '';
+    transport.stderr?.on('data', (chunk: Buffer) => {
+      stderr += chunk.toString('utf8');
+    });
     try {
       expect(client.getServerVersion()).toEqual({ name: 'diagrammar', version: SERVER_VERSION });
       expect(toolNames(await client.listTools())).toEqual(toolNames(await httpClient.listTools()));
+      // Confirms mcp.ts's own "serving over stdio" line (packages/cli/src/commands/mcp.ts)
+      // reaches the parent on stderr, never stdout — collected before closing the client.
+      expect(stderr).toContain(`diagrammar MCP server serving over stdio (root: `);
     } finally {
       await client.close();
       await httpClient.close();

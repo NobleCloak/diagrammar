@@ -3,9 +3,16 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
-// Under `diagrammar mcp --stdio`, stdout IS the MCP wire: one stray
-// `console.log` corrupts the JSON-RPC stream and the client disconnects with
-// an opaque parse error. Every diagnostic in this package goes to stderr.
+// Under `diagrammar mcp --stdio`, stdout IS the MCP wire: any write to it
+// that isn't the framed JSON-RPC message itself corrupts the stream and the
+// client disconnects with an opaque parse error. That rules out
+// `process.stdout.write(` and every `console.*` method except
+// `console.error`/`console.warn`, both of which Node sends to stderr — so
+// those two are allow-listed and everything else (`log`, `info`, `debug`,
+// `dir`, `table`, `group`, `count`, ...) is flagged. This suite scans every
+// source file in this package plus the CLI's `mcp` command and entry point,
+// since those are the other places on the stdio path that could write a
+// stray diagnostic.
 const srcDir = path.dirname(fileURLToPath(import.meta.url));
 
 function sourceFiles(dir: string): string[] {
@@ -18,20 +25,30 @@ function sourceFiles(dir: string): string[] {
   return out;
 }
 
-describe('packages/mcp never writes to stdout', () => {
-  const files = sourceFiles(srcDir);
+const CLI_FILES = [
+  path.join(srcDir, '../../cli/src/commands/mcp.ts'),
+  path.join(srcDir, '../../cli/src/bin.ts'),
+];
 
-  it('scans at least the app, serve and stdio modules', () => {
+const DISALLOWED_CONSOLE_METHOD = /console\.(?!error\b|warn\b)\w+\(/;
+const STDOUT_WRITE = /process\.stdout\.write\(/;
+
+describe('packages/mcp (and the CLI stdio path) never write to stdout', () => {
+  const files = [...sourceFiles(srcDir), ...CLI_FILES];
+
+  it('scans at least the app, serve, stdio, mcp command and bin modules', () => {
     const names = files.map((f) => path.basename(f));
-    expect(names).toEqual(expect.arrayContaining(['app.ts', 'serve.ts', 'stdio.ts']));
+    expect(names).toEqual(
+      expect.arrayContaining(['app.ts', 'serve.ts', 'stdio.ts', 'mcp.ts', 'bin.ts']),
+    );
   });
 
   it.each(files.map((file) => ({ name: path.relative(srcDir, file), file })))(
-    '$name has no console.log or process.stdout.write',
+    '$name has no disallowed console method or process.stdout.write',
     ({ file }) => {
       const text = readFileSync(file, 'utf8');
-      expect(text).not.toMatch(/console\.log\(/);
-      expect(text).not.toMatch(/process\.stdout\.write\(/);
+      expect(text).not.toMatch(DISALLOWED_CONSOLE_METHOD);
+      expect(text).not.toMatch(STDOUT_WRITE);
     },
   );
 });

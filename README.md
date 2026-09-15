@@ -135,7 +135,7 @@ See [`docs/format-guide.md`](docs/format-guide.md) for the full YAML schema and
 
 ## MCP server
 
-Diagrammar ships an MCP server (Streamable HTTP, or stdio with --stdio) with eight tools
+Diagrammar ships an MCP server (Streamable HTTP, or stdio with `--stdio`) with eight tools
 (`diagrammar_list`, `diagrammar_describe`, `diagrammar_validate`,
 `diagrammar_create`, `diagrammar_edit`, `diagrammar_render`, `diagrammar_schema`,
 `diagrammar_icons`) and three resources (`diagrammar://schema/v1`,

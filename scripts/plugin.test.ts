@@ -66,6 +66,34 @@ describe('plugin .mcp.json', () => {
   });
 });
 
+describe('the four hand-maintained npx caret ranges stay in lockstep', () => {
+  const mcpServers = readJson(path.join(pluginDir, '.mcp.json')) as Record<
+    string,
+    { args: string[] }
+  >;
+  const mcpRange = (() => {
+    const spec = mcpServers.diagrammar!.args.find((a) => a.startsWith('@noblecloak/diagrammar@'));
+    return spec!.slice('@noblecloak/diagrammar@'.length);
+  })();
+
+  const DOCS = [
+    path.join(repoRoot, 'README.md'),
+    path.join(pluginDir, 'README.md'),
+    path.join(pluginDir, 'skills/diagrammar/SKILL.md'),
+  ];
+
+  for (const doc of DOCS) {
+    it(`${path.relative(repoRoot, doc)}'s @noblecloak/diagrammar@ range(s) match .mcp.json's`, () => {
+      const text = readFileSync(doc, 'utf8');
+      const occurrences = [...text.matchAll(/@noblecloak\/diagrammar@(\^\d+\.\d+)/g)].map(
+        (m) => m[1],
+      );
+      expect(occurrences.length).toBeGreaterThan(0);
+      for (const occurrence of occurrences) expect(occurrence).toBe(mcpRange);
+    });
+  }
+});
+
 describe('plugin skill', () => {
   const skillPath = path.join(pluginDir, 'skills/diagrammar/SKILL.md');
 

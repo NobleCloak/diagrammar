@@ -13,6 +13,11 @@ Maintainer checklist. Users do not need any of this: they install with
       `claude plugin marketplace add NobleCloak/diagrammar`,
       `claude plugin install diagrammar@noblecloak`, then `/mcp` shows `diagrammar`
       connected and a `diagrammar_render` call succeeds.
+- [ ] `claude plugin validate ./plugin --strict` and
+      `claude plugin validate ./.claude-plugin/marketplace.json --strict` both pass.
+- [ ] The marketplace entry on `main` is installable the moment it merges: the CLI version
+      pinned by `plugin.json`/`.mcp.json` must already be live on npm before announcing the
+      plugin (the sync script moves both together in the Version Packages PR).
 
 ## The form
 
