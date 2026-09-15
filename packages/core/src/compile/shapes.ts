@@ -12,6 +12,7 @@ const GRAPH_SHAPE_TO_D2: Record<GraphShape, string> = {
   cloud: 'cloud',
   person: 'person',
   package: 'package',
+  image: 'image',
 };
 
 /** Maps a flowchart/architecture GraphShape to its D2 `shape:` value. */

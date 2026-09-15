@@ -64,6 +64,9 @@
               "label": {
                 "type": "string"
               },
+              "icon": {
+                "type": "string"
+              },
               "in": {
                 "type": "string"
               },
@@ -116,6 +119,9 @@
               "label": {
                 "type": "string"
               },
+              "icon": {
+                "type": "string"
+              },
               "shape": {
                 "type": "string",
                 "enum": [
@@ -129,7 +135,8 @@
                   "queue",
                   "cloud",
                   "person",
-                  "package"
+                  "package",
+                  "image"
                 ]
               },
               "in": {
@@ -417,6 +424,9 @@
                 "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$"
               },
               "label": {
+                "type": "string"
+              },
+              "icon": {
                 "type": "string"
               },
               "kind": {

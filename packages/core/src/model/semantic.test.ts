@@ -343,3 +343,36 @@ describe('rule 10: theme path form is a well-formed relative path', () => {
     expect(parse('diagrammar: 1\ntype: flowchart\ntheme: "themes\\\\house.yaml"\n').ok).toBe(false);
   });
 });
+
+describe('rule 11: shape image requires icon; rule 12: icon path syntax', () => {
+  it('rejects shape: image without icon at nodes[i].shape', () => {
+    const result = parse(
+      'diagrammar: 1\ntype: architecture\nnodes:\n  - { id: a, shape: image }\n',
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues[0]).toMatchObject({
+      path: 'nodes[0].shape',
+      message: 'shape "image" requires an icon',
+    });
+  });
+  it('accepts shape: image with an icon in both graph families', () => {
+    expect(
+      parse(
+        'diagrammar: 1\ntype: flowchart\nnodes:\n  - { id: a, shape: image, icon: lucide/database }\n',
+      ).ok,
+    ).toBe(true);
+    expect(
+      parse(
+        'diagrammar: 1\ntype: architecture\nnodes:\n  - { id: a, shape: image, icon: lucide/database }\n',
+      ).ok,
+    ).toBe(true);
+  });
+  it('accepts icons on participants', () => {
+    expect(
+      parse(
+        'diagrammar: 1\ntype: sequence\nparticipants:\n  - { id: u, kind: actor, icon: lucide/user }\n',
+      ).ok,
+    ).toBe(true);
+  });
+});

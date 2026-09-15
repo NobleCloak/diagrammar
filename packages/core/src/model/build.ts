@@ -80,6 +80,7 @@ function buildGroup(g: GroupInput): GroupModel {
     kind: 'group',
     id: g.id,
     label: g.label ?? g.id,
+    ...(g.icon !== undefined ? { icon: g.icon } : {}),
     ...(g.in !== undefined ? { parent: g.in } : {}),
     ...(g.style !== undefined ? { style: buildStyle(g.style) } : {}),
   };
@@ -90,6 +91,7 @@ function buildNode(n: NodeInput): NodeModel {
     kind: 'node',
     id: n.id,
     label: n.label ?? n.id,
+    ...(n.icon !== undefined ? { icon: n.icon } : {}),
     shape: n.shape ?? 'rect',
     ...(n.in !== undefined ? { group: n.in } : {}),
     ...(n.description !== undefined ? { description: n.description } : {}),
@@ -130,6 +132,7 @@ function buildParticipant(p: ParticipantInput): ParticipantModel {
     kind: 'participant',
     id: p.id,
     label: p.label ?? p.id,
+    ...(p.icon !== undefined ? { icon: p.icon } : {}),
     participantKind: p.kind ?? 'service',
     ...(p.description !== undefined ? { description: p.description } : {}),
     ...(p.style !== undefined ? { style: buildStyle(p.style) } : {}),

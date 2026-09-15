@@ -8,6 +8,7 @@ import type {
   SequenceItem,
 } from './types.js';
 import { normalizeRelativePath } from '../assets/paths.js';
+import { isIconPathRef } from '../icons/ref.js';
 import { isPresetName } from '../theme/presets.js';
 
 /**
@@ -24,6 +25,7 @@ export function runSemanticRules(diagram: Diagram): ValidationIssue[] {
     ...checkReferences(diagram),
     ...checkDuplicateCalloutNumbers(diagram),
     ...checkThemePath(diagram),
+    ...checkIconPaths(diagram),
   ];
   if (diagram.type === 'sequence') {
     issues.push(...checkFragmentsNonEmpty(diagram));
@@ -33,6 +35,7 @@ export function runSemanticRules(diagram: Diagram): ValidationIssue[] {
       ...checkAmbiguousEdges(diagram),
       ...checkShapeVocabulary(diagram),
       ...checkGroupParentFamily(diagram),
+      ...checkImageShapesHaveIcons(diagram),
     );
   }
   return issues;
@@ -317,4 +320,49 @@ function checkThemePath(diagram: Diagram): ValidationIssue[] {
   } catch (error) {
     return [{ path: 'theme', message: error instanceof Error ? error.message : String(error) }];
   }
+}
+
+// --- Rule 11: shape image requires icon (graph only) ------------------------
+
+function checkImageShapesHaveIcons(diagram: GraphDiagram): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  diagram.nodes.forEach((n, i) => {
+    if (n.shape === 'image' && n.icon === undefined) {
+      issues.push({ path: `nodes[${i}].shape`, message: 'shape "image" requires an icon' });
+    }
+  });
+  return issues;
+}
+
+// --- Rule 12: a path-form icon is a well-formed relative path ---------------
+
+function iconPathIssue(path: string, ref: string): ValidationIssue | undefined {
+  if (!isIconPathRef(ref)) return undefined;
+  try {
+    normalizeRelativePath(ref);
+    return undefined;
+  } catch (error) {
+    return { path, message: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+function checkIconPaths(diagram: Diagram): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  if (diagram.type === 'sequence') {
+    diagram.participants.forEach((p, i) => {
+      const issue =
+        p.icon !== undefined ? iconPathIssue(`participants[${i}].icon`, p.icon) : undefined;
+      if (issue) issues.push(issue);
+    });
+    return issues;
+  }
+  diagram.groups.forEach((g, i) => {
+    const issue = g.icon !== undefined ? iconPathIssue(`groups[${i}].icon`, g.icon) : undefined;
+    if (issue) issues.push(issue);
+  });
+  diagram.nodes.forEach((n, i) => {
+    const issue = n.icon !== undefined ? iconPathIssue(`nodes[${i}].icon`, n.icon) : undefined;
+    if (issue) issues.push(issue);
+  });
+  return issues;
 }

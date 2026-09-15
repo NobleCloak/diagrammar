@@ -211,3 +211,15 @@ vitestDescribe('describe — invalid input', () => {
     expect(result.title).toBe('Broken');
   });
 });
+
+it('reports icon references on nodes, groups and participants', () => {
+  const graph = describe(
+    'diagrammar: 1\ntype: architecture\ngroups:\n  - { id: g, icon: lucide/cloud }\nnodes:\n  - { id: a, in: g, icon: ./icons/x.svg }\n',
+  );
+  expect(graph.elements.find((e) => e.key === 'g')?.icon).toBe('lucide/cloud');
+  expect(graph.elements.find((e) => e.key === 'a')?.icon).toBe('./icons/x.svg');
+  const seq = describe(
+    'diagrammar: 1\ntype: sequence\nparticipants:\n  - { id: u, icon: lucide/user }\n',
+  );
+  expect(seq.elements[0]?.icon).toBe('lucide/user');
+});

@@ -1,8 +1,21 @@
 import { z } from 'zod';
 import type { DiagramType, GraphShape } from '../model/types.js';
+import { parseIconRef } from '../icons/ref.js';
 import { NoteSchema, CalloutSchema, ViewSchema } from './annotations.js';
 import { BaseEnvelopeFields, DirectionSchema, IdSchema } from './envelope.js';
 import { StyleSchema } from './style.js';
+
+/** Spec §3.2: `<set>/<name>` or a relative `.svg` path; the message names both forms. */
+export const IconRefSchema = z.string().superRefine((value, ctx) => {
+  try {
+    parseIconRef(value);
+  } catch (error) {
+    ctx.addIssue({
+      code: 'custom',
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
 
 /**
  * The union of every flowchart and architecture shape. The schema does not
@@ -23,6 +36,7 @@ const ALL_GRAPH_SHAPES = [
   'cloud',
   'person',
   'package',
+  'image',
 ] as const satisfies readonly GraphShape[];
 export const GraphShapeSchema = z.enum(ALL_GRAPH_SHAPES);
 
@@ -30,6 +44,7 @@ export const GroupSchema = z
   .object({
     id: IdSchema,
     label: z.string().optional(),
+    icon: IconRefSchema.optional(),
     in: z.string().optional(),
     style: StyleSchema.optional(),
   })
@@ -40,6 +55,7 @@ export const NodeSchema = z
   .object({
     id: IdSchema,
     label: z.string().optional(),
+    icon: IconRefSchema.optional(),
     shape: GraphShapeSchema.optional(),
     in: z.string().optional(),
     description: z.string().optional(),

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { FragmentKind, MessageStyle, ParticipantKind } from '../model/types.js';
 import { CalloutSchema, NoteSchema, ViewSchema } from './annotations.js';
 import { BaseEnvelopeFields, IdSchema } from './envelope.js';
+import { IconRefSchema } from './graph.js';
 import { StyleSchema } from './style.js';
 
 const PARTICIPANT_KINDS = [
@@ -22,6 +23,7 @@ export const ParticipantSchema = z
   .object({
     id: IdSchema,
     label: z.string().optional(),
+    icon: IconRefSchema.optional(),
     kind: ParticipantKindSchema.optional(),
     description: z.string().optional(),
     style: StyleSchema.optional(),

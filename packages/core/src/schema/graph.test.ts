@@ -125,3 +125,22 @@ describe('GraphFileSchema', () => {
     expect(result.success).toBe(false);
   });
 });
+
+describe('icon field (spec §3.2)', () => {
+  it('accepts set and path forms on nodes and groups', () => {
+    expect(NodeSchema.safeParse({ id: 'a', icon: 'lucide/database' }).success).toBe(true);
+    expect(NodeSchema.safeParse({ id: 'a', icon: './icons/x.svg' }).success).toBe(true);
+    expect(GroupSchema.safeParse({ id: 'g', icon: 'lucide/cloud' }).success).toBe(true);
+  });
+  it('rejects a malformed icon with a message naming both forms', () => {
+    const result = NodeSchema.safeParse({ id: 'a', icon: 'database' });
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.error.issues[0]?.message).toContain('<set>/<name>');
+  });
+  it('accepts shape: image', () => {
+    expect(NodeSchema.safeParse({ id: 'a', shape: 'image', icon: 'lucide/database' }).success).toBe(
+      true,
+    );
+  });
+});

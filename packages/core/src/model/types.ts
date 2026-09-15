@@ -32,7 +32,8 @@ export type GraphShape =
   | 'queue'
   | 'cloud'
   | 'person'
-  | 'package'; // architecture (+ rect, hexagon)
+  | 'package' // architecture (+ rect, hexagon)
+  | 'image'; // both families; requires icon
 
 export const FLOWCHART_SHAPES: readonly GraphShape[] = [
   'oval',
@@ -41,6 +42,7 @@ export const FLOWCHART_SHAPES: readonly GraphShape[] = [
   'document',
   'parallelogram',
   'hexagon',
+  'image',
 ];
 export const ARCHITECTURE_SHAPES: readonly GraphShape[] = [
   'rect',
@@ -50,6 +52,7 @@ export const ARCHITECTURE_SHAPES: readonly GraphShape[] = [
   'person',
   'hexagon',
   'package',
+  'image',
 ];
 
 export type ParticipantKind = 'actor' | 'service' | 'database' | 'queue';
@@ -60,6 +63,7 @@ export interface NodeModel {
   kind: 'node';
   id: string;
   label: string;
+  icon?: string;
   shape: GraphShape;
   group?: string;
   description?: string;
@@ -70,6 +74,7 @@ export interface GroupModel {
   kind: 'group';
   id: string;
   label: string;
+  icon?: string;
   parent?: string;
   style?: Style;
 }
@@ -89,6 +94,7 @@ export interface ParticipantModel {
   kind: 'participant';
   id: string;
   label: string;
+  icon?: string;
   participantKind: ParticipantKind;
   description?: string;
   style?: Style;

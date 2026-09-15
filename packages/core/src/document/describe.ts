@@ -23,6 +23,7 @@ export interface DescribedElement {
   to?: string;
   path?: string;
   in?: string;
+  icon?: string;
   refs: string[];
 }
 
@@ -193,7 +194,7 @@ export function describe(text: string): Description {
             label: group.label,
             refs: group.parent !== undefined ? [group.parent] : [],
           },
-          { in: group.parent },
+          { in: group.parent, icon: group.icon },
         ),
       );
     }
@@ -208,7 +209,7 @@ export function describe(text: string): Description {
             label: node.label,
             refs: node.group !== undefined ? [node.group] : [],
           },
-          { in: node.group },
+          { in: node.group, icon: node.icon },
         ),
       );
     }
@@ -234,16 +235,21 @@ export function describe(text: string): Description {
       // optional for those kinds. `ParticipantModel.label` isn't —
       // `build.ts`'s `buildParticipant` defaults it to the participant's
       // own id when the file omits it — so it's always a plain `string`,
-      // never `undefined`, and a direct assignment here is exactly as sound
-      // as `withOptional` would be, just without the indirection.
-      elements.push({
-        kind: 'participant',
-        key: participant.id,
-        id: participant.id,
-        selector: { id: participant.id },
-        label: participant.label,
-        refs: [],
-      });
+      // never `undefined`. `icon` *is* genuinely optional, so the push now
+      // goes through `withOptional` for that field alone.
+      elements.push(
+        withOptional(
+          {
+            kind: 'participant' as const,
+            key: participant.id,
+            id: participant.id,
+            selector: { id: participant.id },
+            label: participant.label,
+            refs: [],
+          },
+          { icon: participant.icon },
+        ),
+      );
     }
     describeSequenceItems(model.items, elements);
   }
