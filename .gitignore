@@ -4,6 +4,8 @@ dist/
 .tsbuild/
 *.tsbuildinfo
 coverage/
+packages/icons-*/icons.json.gz
+packages/icons-*/index.json
 
 # Local spikes and test scratch
 /spikes/

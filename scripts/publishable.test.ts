@@ -14,6 +14,8 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
 
 const PUBLISHED_MANIFESTS = [
   path.join(repoRoot, 'packages/core/package.json'),
+  path.join(repoRoot, 'packages/icons-lucide/package.json'),
+  path.join(repoRoot, 'packages/icons-simple-icons/package.json'),
   path.join(repoRoot, 'packages/mcp/package.json'),
   path.join(repoRoot, 'packages/cli/package.json'),
 ];
