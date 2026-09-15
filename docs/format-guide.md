@@ -31,12 +31,14 @@ engine is named.
 `flowchart` and `architecture` share one schema shape (nodes, groups, edges) with
 different defaults and a different shape vocabulary:
 
-|                   | flowchart                                                         | architecture                                                         |
-| ----------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------- |
-| default layout    | `dagre`                                                           | `tala`                                                               |
-| default direction | `down`                                                            | `right`                                                              |
-| shape vocabulary  | `oval`, `rect`, `diamond`, `document`, `parallelogram`, `hexagon` | `rect`, `cylinder`, `queue`, `cloud`, `person`, `hexagon`, `package` |
-| groups            | flat (no nesting)                                                 | can nest via `in`                                                    |
+|                   | flowchart                                                                          | architecture                                                                          |
+| ----------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| default layout    | `dagre`                                                                            | `tala`                                                                                |
+| default direction | `down`                                                                             | `right`                                                                               |
+| shape vocabulary  | `oval`, `rect`, `diamond`, `document`, `parallelogram`, `hexagon`, `image`[^image] | `rect`, `cylinder`, `queue`, `cloud`, `person`, `hexagon`, `package`, `image`[^image] |
+| groups            | flat (no nesting)                                                                  | can nest via `in`                                                                     |
+
+[^image]: `image` requires `icon`; the icon becomes the node and the label sits below it.
 
 ### Groups
 
@@ -73,6 +75,33 @@ nodes:
       fill: '#eef'
 ```
 
+### Icons
+
+Nodes, groups and participants accept `icon:`. The value is either `<set>/<name>`
+from an installed icon set (`diagrammar icons search <query>` finds names;
+`lucide/…` and `simple-icons/…` are bundled with the CLI and MCP server) or a
+relative path to a local `.svg` resolved against the diagram's directory:
+
+```yaml
+diagrammar: 1
+type: architecture
+nodes:
+  - id: db
+    shape: cylinder
+    icon: lucide/database # icon drawn inside the shape
+  - id: pg
+    shape: image # the icon is the node, label below
+    icon: simple-icons/postgresql
+  - id: legacy
+    icon: ./icons/custom.svg # local SVG, sanitized on load
+```
+
+Local SVGs pass a sanitizer (no scripts, no external references, 256 KB cap)
+and every icon is embedded inline, so renders stay offline and byte-identical.
+Simple Icons contains no Amazon/AWS marks; build a local `aws/` set from the
+official download with `diagrammar icons import aws <zip> --out ./icons/aws`
+and register it with `--icons ./icons/aws`.
+
 ### Edges
 
 ```yaml
@@ -101,6 +130,7 @@ participants:
   - id: user
     label: User
     kind: actor # actor | service | database | queue — default service
+    icon: lucide/user # participants accept icon too
   - id: api
     label: API
   - id: db
@@ -328,6 +358,13 @@ Beyond the schema shape itself, these are checked:
    across the file.
 10. A path-form `theme` is a well-formed relative path (no absolute paths,
     drive letters or backslashes).
+11. `shape: image` requires `icon`.
+12. A path-form `icon` is a well-formed relative path ending in `.svg`.
+
+`diagrammar validate` and `diagrammar_validate` also check that every set-form
+icon exists (unknown names list the nearest matches); the library's
+`validate()` checks the reference syntax only — pass `RenderOptions.icons` (an
+`IconRegistry`) and `resolver` to `render()`.
 
 ## 8. The Markdown walkthrough
 
@@ -361,3 +398,6 @@ callouts (two of them sharing a single edge as their target), two views, and a
 into pixels. `examples/themed.yaml` alongside `examples/themes/house.yaml` is
 the themed worked example: a path-form `theme:` reference and the theme file
 it resolves to, with a palette and per-shape style defaults (§6.1).
+`examples/icons.yaml` is the icons worked example: set-form icons on groups and
+`shape: rect` nodes, `shape: image` icons (`simple-icons/kubernetes`,
+`simple-icons/postgresql`), and a local `./icons/custom.svg` path-form icon.

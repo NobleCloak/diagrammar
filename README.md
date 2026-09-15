@@ -72,6 +72,9 @@ edge, laid out automatically — no manual positioning, ever.
   for docs that read well without the reader ever opening the image.
 - **Themes** — four built-in presets plus reusable theme files (palette +
   per-kind style defaults).
+- **Icons** — `icon: lucide/database` or `simple-icons/postgresql` on nodes,
+  groups and participants (Lucide and Simple Icons bundled; local SVGs and an
+  AWS importer), embedded inline for offline, deterministic renders.
 
 ## Install
 
@@ -97,13 +100,16 @@ bundlers: mark it `external`).
 ## CLI
 
 ```
-diagrammar render <files...> [-o <dir>] [--format png|svg|md|d2] [--view <id>] [--scale 1|2] [--theme <preset|path>] [--no-legend]
-diagrammar validate <files...> [--json]
+diagrammar render <files...> [-o <dir>] [--format png|svg|md|d2] [--view <id>] [--scale 1|2] [--theme <preset|path>] [--icons <dir>]... [--no-legend]
+diagrammar validate <files...> [--icons <dir>]... [--json]
 diagrammar new <file> --type flowchart|architecture|sequence [--title "..."]
 diagrammar describe <file> [--json]
 diagrammar edit <file> --ops <ops.json|-> [--expected-hash <sha256>]
-diagrammar mcp [--root <dir>] [--port 3737] [--host 127.0.0.1] [--no-fs] [--allow-origin <origin>]...
+diagrammar mcp [--root <dir>] [--port 3737] [--host 127.0.0.1] [--no-fs] [--allow-origin <origin>]... [--icons <dir>]...
 diagrammar themes list [--json]
+diagrammar icons search <query> [--set <id>] [--limit n] [--json]
+diagrammar icons sets [--json]
+diagrammar icons import aws <zip> --out <dir>
 ```
 
 - `render` accepts globs. `-o <dir>` is an output _directory_ (created
@@ -129,11 +135,11 @@ See [`docs/format-guide.md`](docs/format-guide.md) for the full YAML schema and
 
 ## MCP server
 
-Diagrammar ships a Streamable HTTP MCP server with seven tools
+Diagrammar ships a Streamable HTTP MCP server with eight tools
 (`diagrammar_list`, `diagrammar_describe`, `diagrammar_validate`,
-`diagrammar_create`, `diagrammar_edit`, `diagrammar_render`, `diagrammar_schema`)
-and three resources (`diagrammar://schema/v1`, `diagrammar://schema/theme-v1`,
-`diagrammar://guide`).
+`diagrammar_create`, `diagrammar_edit`, `diagrammar_render`, `diagrammar_schema`,
+`diagrammar_icons`) and three resources (`diagrammar://schema/v1`,
+`diagrammar://schema/theme-v1`, `diagrammar://guide`).
 
 Start it:
 
@@ -152,8 +158,11 @@ localhost origins to block DNS rebinding. Pass `--no-fs` to disable path-based
 tools and run it as a pure render-and-edit function service — the shape used for
 hosting behind a load balancer (v1 ships no authentication for that mode). Under
 `--no-fs`, `diagrammar_list` and `diagrammar_create` are not registered at all
-(there is no filesystem root for them to operate on); the remaining five tools
-work purely against inline `source` text.
+(there is no filesystem root for them to operate on); of the remaining six,
+`diagrammar_describe`, `diagrammar_validate`, `diagrammar_edit`, and
+`diagrammar_render` work purely against inline `source` text, while
+`diagrammar_schema` and `diagrammar_icons` never depend on the filesystem
+either way.
 
 TypeScript consumers building an MCP client under `exactOptionalPropertyTypes`
 will need a one-line `as Transport` bridge when passing a
