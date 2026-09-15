@@ -20,8 +20,11 @@ const FORBIDDEN: ReadonlyArray<[RegExp, string]> = [
   [/<style[\s>][^]*?@import/i, '<style> with @import is not allowed'],
 ];
 
-/** Every href/xlink:href must be a same-document fragment. */
-const HREF_RE = /\s(?:xlink:)?href\s*=\s*["']([^"']*)["']/gi;
+/**
+ * Every href (prefixed or not) and xlink:href must be a same-document fragment.
+ * Matches: quoted (single or double), unquoted, with optional namespace prefix.
+ */
+const HREF_RE = /\s(?:[A-Za-z_][\w.-]*:)?href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/gi;
 
 /**
  * The security boundary for icons (spec §5.3): applied at set build time and
@@ -30,18 +33,23 @@ const HREF_RE = /\s(?:xlink:)?href\s*=\s*["']([^"']*)["']/gi;
  */
 export function sanitizeSvg(text: string, options: SanitizeOptions = {}): string {
   const maxBytes = options.maxBytes ?? ICON_MAX_BYTES;
-  for (const [pattern, reason] of FORBIDDEN) {
-    if (pattern.test(text)) reject(reason);
-  }
-  for (const match of text.matchAll(HREF_RE)) {
-    const value = match[1] ?? '';
-    if (!value.startsWith('#')) reject(`external reference "${value}" is not allowed`);
-  }
 
+  // Strip XML declarations and comments FIRST, then validate against the cleaned text.
+  // This prevents comment-based obfuscation (e.g., <scr<!--x-->ipt>).
   let out = text
     .replace(/<\?xml[^]*?\?>/g, '')
     .replace(/<!--[^]*?-->/g, '')
     .trim();
+
+  // Check forbidden patterns and href references against the stripped text.
+  for (const [pattern, reason] of FORBIDDEN) {
+    if (pattern.test(out)) reject(reason);
+  }
+  for (const match of out.matchAll(HREF_RE)) {
+    // One of groups 1, 2, 3 will match depending on quote style or unquoted
+    const value = match[1] ?? match[2] ?? match[3] ?? '';
+    if (!value.startsWith('#')) reject(`external reference "${value}" is not allowed`);
+  }
   const rootMatch = /^<svg\b([^>]*)>/i.exec(out);
   if (rootMatch === null) reject('root element is not <svg>');
   let attrs = rootMatch[1] ?? '';
@@ -64,6 +72,7 @@ export function sanitizeSvg(text: string, options: SanitizeOptions = {}): string
 
   out = `<svg${attrs}>${out.slice(rootMatch[0].length)}`;
   out = out.replace(/>\s+</g, '><').trim();
+  out = out.replace(/<\/svg>\s*$/i, '</svg>');
 
   const bytes = Buffer.byteLength(out, 'utf8');
   if (bytes > maxBytes) reject(`${bytes} bytes exceeds the ${maxBytes}-byte cap`);

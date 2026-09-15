@@ -50,6 +50,26 @@ describe('sanitizeSvg normalization', () => {
       ),
     ).toContain('<text>a b</text>');
   });
+  it('allows fragment hrefs (single quoted)', () => {
+    const wrap = (inner: string): string =>
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9 9">${inner}</svg>`;
+    expect(() => sanitizeSvg(wrap("<use href='#p'/>"))).not.toThrow();
+  });
+  it('allows unquoted fragment hrefs', () => {
+    const wrap = (inner: string): string =>
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9 9">${inner}</svg>`;
+    expect(() => sanitizeSvg(wrap('<use href=#p />'))).not.toThrow();
+  });
+  it('normalizes uppercase SVG root tag to lowercase', () => {
+    expect(
+      sanitizeSvg('<SVG xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect/></SVG>'),
+    ).toBe('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect/></svg>');
+  });
+  it('ensures idempotence (sanitizing twice yields same result)', () => {
+    const sanitized1 = sanitizeSvg(LUCIDE);
+    const sanitized2 = sanitizeSvg(sanitized1);
+    expect(sanitized2).toBe(sanitized1);
+  });
 });
 
 describe('sanitizeSvg rejections (icon_invalid)', () => {
@@ -66,6 +86,15 @@ describe('sanitizeSvg rejections (icon_invalid)', () => {
     ['entity', '<!ENTITY x "y"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9 9"/>'],
     ['not an svg', '<div>hi</div>'],
     ['no size info', '<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>'],
+    ['comment-obfuscated script', wrap('<scr<!--x-->ipt>alert(1)</scr<!--x-->ipt>')],
+    ['comment-obfuscated style import', wrap('<style>a{}@imp<!--x-->ort url(evil);</style>')],
+    ['comment-obfuscated xlink:href', wrap('<use xli<!--x-->nk:href="http://evil/x.svg"/>')],
+    ['comment-obfuscated event handler', wrap('<rect on<!--x-->load="x()"/>')],
+    [
+      'custom namespace prefix href',
+      '<svg xmlns="http://www.w3.org/2000/svg" xmlns:x="http://www.w3.org/1999/xlink" viewBox="0 0 9 9"><use x:href="http://evil/x.svg"/></svg>',
+    ],
+    ['unquoted external href', wrap('<image href=http://evil/x.png />')],
   ])('rejects %s', (_label, svg) => {
     expect(() => sanitizeSvg(svg)).toThrowError(expect.objectContaining({ code: 'icon_invalid' }));
   });
