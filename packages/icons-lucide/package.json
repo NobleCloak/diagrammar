@@ -1,6 +1,6 @@
 {
   "name": "@noblecloak/diagrammar-icons-lucide",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Lucide icon set for Diagrammar (`icon: lucide/<name>`).",
   "type": "module",
   "license": "ISC",
@@ -44,7 +44,7 @@
     "typecheck": "tsc -b"
   },
   "dependencies": {
-    "@noblecloak/diagrammar-core": "^0.1.1"
+    "@noblecloak/diagrammar-core": "^0.2.0"
   },
   "devDependencies": {
     "typescript": "6.0.3",
