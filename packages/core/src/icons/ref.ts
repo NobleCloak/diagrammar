@@ -12,6 +12,14 @@ export function isIconPathRef(ref: string): boolean {
 }
 
 /**
+ * Shared preamble for every `icon_invalid` message: every rejection — set
+ * form or path form — must name both accepted forms, so a caller who typed
+ * one wrong doesn't need to know the other syntax already existed.
+ */
+const ICON_REF_FORMS_MESSAGE =
+  'must be "<set>/<name>" (e.g. lucide/database) or a relative path ending in .svg';
+
+/**
  * Splits an `icon:` value into its set or path form. Throws `icon_invalid`
  * for anything else, so validation and resolution share one grammar.
  */
@@ -21,7 +29,7 @@ export function parseIconRef(ref: string): IconRef {
       normalizeRelativePath(ref);
     } catch (error) {
       throw new DiagrammarError(
-        `icon path "${ref}" is invalid: ${error instanceof Error ? error.message : String(error)}`,
+        `icon "${ref}" ${ICON_REF_FORMS_MESSAGE}; ${error instanceof Error ? error.message : String(error)}`,
         'icon_invalid',
       );
     }
@@ -29,10 +37,7 @@ export function parseIconRef(ref: string): IconRef {
   }
   const match = ICON_SET_REF_RE.exec(ref);
   if (match === null) {
-    throw new DiagrammarError(
-      `icon "${ref}" must be "<set>/<name>" (e.g. lucide/database) or a relative path ending in .svg`,
-      'icon_invalid',
-    );
+    throw new DiagrammarError(`icon "${ref}" ${ICON_REF_FORMS_MESSAGE}`, 'icon_invalid');
   }
   const slash = ref.indexOf('/');
   return { kind: 'set', set: ref.slice(0, slash), name: ref.slice(slash + 1) };

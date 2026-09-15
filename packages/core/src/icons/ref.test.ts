@@ -45,5 +45,11 @@ describe('parseIconRef', () => {
     expect(() => parseIconRef('a\\b.svg')).toThrowError(
       expect.objectContaining({ code: 'icon_invalid' }),
     );
+    expect(() => parseIconRef('/abs/x.svg')).toThrowError(
+      expect.objectContaining({
+        code: 'icon_invalid',
+        message: expect.stringContaining('<set>/<name>') as string,
+      }),
+    );
   });
 });
