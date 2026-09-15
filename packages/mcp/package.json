@@ -1,6 +1,6 @@
 {
   "name": "@noblecloak/diagrammar-mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "MCP server for Diagrammar diagrams (Streamable HTTP and stdio).",
   "type": "module",
   "license": "Apache-2.0",
@@ -42,9 +42,9 @@
     "typecheck": "tsc -b"
   },
   "dependencies": {
-    "@noblecloak/diagrammar-core": "^0.2.0",
-    "@noblecloak/diagrammar-icons-lucide": "^0.1.0",
-    "@noblecloak/diagrammar-icons-simple-icons": "^0.1.0",
+    "@noblecloak/diagrammar-core": "^0.3.0",
+    "@noblecloak/diagrammar-icons-lucide": "^0.1.1",
+    "@noblecloak/diagrammar-icons-simple-icons": "^0.1.1",
     "hono": "4.13.7",
     "@hono/node-server": "2.1.1",
     "@modelcontextprotocol/sdk": "1.30.0",

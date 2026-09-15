@@ -1,6 +1,6 @@
 {
   "diagrammar": {
     "command": "npx",
-    "args": ["-y", "@noblecloak/diagrammar@^0.2", "mcp", "--stdio"]
+    "args": ["-y", "@noblecloak/diagrammar@^0.3", "mcp", "--stdio"]
   }
 }

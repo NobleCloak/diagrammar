@@ -1,5 +1,11 @@
 # @noblecloak/diagrammar-icons-lucide
 
+## 0.1.1
+
+### Patch Changes
+
+- @noblecloak/diagrammar-core@0.3.0
+
 ## 0.1.0
 
 ### Minor Changes

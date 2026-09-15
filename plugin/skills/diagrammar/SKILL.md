@@ -289,5 +289,5 @@ project that already has the server running. To have a client spawn the server
 itself without the plugin:
 
 ```bash
-claude mcp add diagrammar -- npx -y @noblecloak/diagrammar@^0.2 mcp --stdio
+claude mcp add diagrammar -- npx -y @noblecloak/diagrammar@^0.3 mcp --stdio
 ```

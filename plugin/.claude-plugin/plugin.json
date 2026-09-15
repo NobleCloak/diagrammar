@@ -1,6 +1,6 @@
 {
   "name": "diagrammar",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Author, validate, patch and render Diagrammar YAML diagrams (flowchart, architecture, sequence) from Claude Code — bundles the diagrammar skill and MCP server.",
   "author": { "name": "NobleCloak", "url": "https://github.com/NobleCloak" },
   "homepage": "https://github.com/NobleCloak/diagrammar",

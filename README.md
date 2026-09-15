@@ -172,7 +172,7 @@ directory unless `--root` is passed; `--port`, `--host` and `--allow-origin`
 are HTTP-only and rejected.
 
 ```bash
-claude mcp add diagrammar -- npx -y @noblecloak/diagrammar@^0.2 mcp --stdio
+claude mcp add diagrammar -- npx -y @noblecloak/diagrammar@^0.3 mcp --stdio
 ```
 
 Or install the plugin, which registers the skill and this server together:

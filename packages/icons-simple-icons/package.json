@@ -1,6 +1,6 @@
 {
   "name": "@noblecloak/diagrammar-icons-simple-icons",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Simple Icons brand set for Diagrammar (`icon: simple-icons/<slug>`). No Amazon/AWS marks — use the AWS importer for those.",
   "type": "module",
   "license": "CC0-1.0",
@@ -46,7 +46,7 @@
     "typecheck": "tsc -b"
   },
   "dependencies": {
-    "@noblecloak/diagrammar-core": "^0.2.0"
+    "@noblecloak/diagrammar-core": "^0.3.0"
   },
   "devDependencies": {
     "typescript": "6.0.3",

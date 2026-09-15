@@ -1,5 +1,21 @@
 # @noblecloak/diagrammar
 
+## 0.3.0
+
+### Minor Changes
+
+- c9dd949: `diagrammar mcp --stdio` speaks MCP over stdin/stdout (for the Claude Code
+  plugin and other clients that spawn the server). It cannot be combined with
+  `--port`, `--host` or `--allow-origin`; `--root`, `--no-fs` and `--icons`
+  work as before.
+
+### Patch Changes
+
+- Updated dependencies [0fefae6]
+- Updated dependencies [c9dd949]
+  - @noblecloak/diagrammar-mcp@0.3.0
+  - @noblecloak/diagrammar-core@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes

@@ -1,5 +1,21 @@
 # @noblecloak/diagrammar-mcp
 
+## 0.3.0
+
+### Minor Changes
+
+- c9dd949: New `serveStdio(config)` runs the same tools and resources over stdio for
+  clients that spawn the server themselves. `buildContext` and `buildServer`
+  are exported so other transports can reuse the registered server.
+
+### Patch Changes
+
+- 0fefae6: The MCP server now reports its real package version in the `initialize`
+  handshake (it was hardcoded to 0.1.0). `SERVER_VERSION` is exported.
+- @noblecloak/diagrammar-core@0.3.0
+  - @noblecloak/diagrammar-icons-lucide@0.1.1
+  - @noblecloak/diagrammar-icons-simple-icons@0.1.1
+
 ## 0.2.0
 
 ### Minor Changes
