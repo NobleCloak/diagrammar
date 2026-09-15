@@ -3,7 +3,16 @@ import { Hono } from 'hono';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { createApp, originGuard, SERVER_VERSION, type McpAppConfig } from './app.js';
+import { resolve } from 'node:path';
+import {
+  createApp,
+  originGuard,
+  SERVER_VERSION,
+  buildContext,
+  buildServer,
+  type McpAppConfig,
+} from './app.js';
+import { defaultIconRegistry } from './icons.js';
 
 function initializeBody(id: number): string {
   return JSON.stringify({
@@ -311,5 +320,39 @@ describe('server version', () => {
     } finally {
       await closeSessions();
     }
+  });
+});
+
+describe('buildContext', () => {
+  it('resolves root against cwd and keeps noFs false', () => {
+    const ctx = buildContext({ noFs: false, root: 'examples' });
+    expect(ctx.root).toBe(resolve('examples'));
+    expect(ctx.noFs).toBe(false);
+  });
+
+  it('defaults root to cwd when omitted', () => {
+    const ctx = buildContext({ noFs: false });
+    expect(ctx.root).toBe(resolve(process.cwd()));
+  });
+
+  it('drops root entirely under noFs', () => {
+    const ctx = buildContext({ noFs: true, root: 'examples' });
+    expect(ctx.root).toBeUndefined();
+    expect(ctx.noFs).toBe(true);
+  });
+
+  it('uses the bundled registry unless one is given', () => {
+    const given = defaultIconRegistry();
+    expect(buildContext({ noFs: true, icons: given }).icons).toBe(given);
+    expect(buildContext({ noFs: true }).icons).not.toBe(given);
+  });
+});
+
+describe('buildServer', () => {
+  it('returns a server named diagrammar at SERVER_VERSION', async () => {
+    const server = buildServer(buildContext({ noFs: true }));
+    // McpServer exposes the low-level Server; its `initialize` result carries serverInfo.
+    expect(server.server).toBeDefined();
+    await server.close();
   });
 });

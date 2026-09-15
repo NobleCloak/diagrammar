@@ -70,7 +70,23 @@ interface SessionEntry {
   lastSeen: number;
 }
 
-function buildServer(ctx: ToolContext): McpServer {
+/**
+ * Turns the transport-independent part of `McpAppConfig` into the
+ * `ToolContext` every tool and resource reads. Shared by the Streamable HTTP
+ * app and the stdio server so both jail paths and register icon sets the
+ * same way.
+ */
+export function buildContext(config: Pick<McpAppConfig, 'root' | 'noFs' | 'icons'>): ToolContext {
+  const root = config.noFs ? undefined : resolve(config.root ?? process.cwd());
+  return {
+    root,
+    noFs: config.noFs,
+    icons: config.icons ?? defaultIconRegistry(),
+  };
+}
+
+/** One fully registered `McpServer` (all tools + resources) over `ctx`, not yet connected to any transport. */
+export function buildServer(ctx: ToolContext): McpServer {
   const server = new McpServer(SERVER_INFO);
   registerAllTools(server, ctx);
   registerResources(server, ctx);
@@ -78,12 +94,7 @@ function buildServer(ctx: ToolContext): McpServer {
 }
 
 export function createApp(config: McpAppConfig): CreateAppResult {
-  const root = config.noFs ? undefined : resolve(config.root ?? process.cwd());
-  const ctx: ToolContext = {
-    root,
-    noFs: config.noFs,
-    icons: config.icons ?? defaultIconRegistry(),
-  };
+  const ctx = buildContext(config);
   const sessionIdleMs = config.sessionIdleMs ?? DEFAULT_SESSION_IDLE_MS;
   const maxSessions = config.maxSessions ?? DEFAULT_MAX_SESSIONS;
   const maxBodyBytes = config.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES;
