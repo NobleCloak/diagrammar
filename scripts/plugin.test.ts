@@ -84,3 +84,33 @@ describe('plugin skill', () => {
     expect(pointer.split('\n').length).toBeLessThan(10);
   });
 });
+
+describe('marketplace', () => {
+  const marketplace = readJson(path.join(repoRoot, '.claude-plugin/marketplace.json')) as {
+    name: string;
+    plugins: { name: string; source: string }[];
+  };
+
+  it('is the noblecloak marketplace listing the diagrammar plugin', () => {
+    expect(marketplace.name).toBe('noblecloak');
+    expect(marketplace.plugins.map((p) => p.name)).toEqual(['diagrammar']);
+  });
+
+  it('every plugin source resolves to a directory holding .claude-plugin/plugin.json', () => {
+    for (const plugin of marketplace.plugins) {
+      expect(plugin.source).toMatch(/^\.\//);
+      const manifest = path.join(repoRoot, plugin.source, '.claude-plugin/plugin.json');
+      expect(existsSync(manifest), `${plugin.source} has no plugin.json`).toBe(true);
+      expect(readJson(manifest).name).toBe(plugin.name);
+    }
+  });
+});
+
+describe('submission checklist', () => {
+  it('names the git-subdir path and the security notes reviewers ask about', () => {
+    const text = readFileSync(path.join(repoRoot, 'docs/plugin-submission.md'), 'utf8');
+    expect(text).toContain('https://clau.de/plugin-directory-submission');
+    expect(text).toContain('`path` = `plugin`');
+    expect(text).toContain('--no-fs');
+  });
+});
