@@ -1,7 +1,18 @@
 import { describe, it, expect, afterEach, vi, type MockInstance } from 'vitest';
 import { Hono } from 'hono';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
-import { createApp, originGuard, type McpAppConfig } from './app.js';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
+import {
+  createApp,
+  originGuard,
+  SERVER_VERSION,
+  buildContext,
+  buildServer,
+  type McpAppConfig,
+} from './app.js';
+import { defaultIconRegistry } from './icons.js';
 
 function initializeBody(id: number): string {
   return JSON.stringify({
@@ -279,5 +290,69 @@ describe('originGuard', () => {
     const app = appWithGuard(['https://app.example.com']);
     const res = await app.request('/test', { headers: { origin: 'https://app.example.com' } });
     expect(res.status).toBe(200);
+  });
+});
+
+describe('server version', () => {
+  it('SERVER_VERSION is the package.json version, not a hand-maintained string', () => {
+    const manifest = JSON.parse(
+      readFileSync(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8'),
+    ) as { version: string };
+    expect(SERVER_VERSION).toBe(manifest.version);
+    expect(SERVER_VERSION).toMatch(/^\d+\.\d+\.\d+/);
+  });
+
+  it('the initialize handshake announces that version', async () => {
+    const { app, closeSessions } = createApp({ noFs: true });
+    try {
+      const res = await app.request('/mcp', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          accept: 'application/json, text/event-stream',
+        },
+        body: initializeBody(1),
+      });
+      const payload = (await readJsonRpcResponse(res)) as {
+        result: { serverInfo: { name: string; version: string } };
+      };
+      expect(payload.result.serverInfo).toEqual({ name: 'diagrammar', version: SERVER_VERSION });
+    } finally {
+      await closeSessions();
+    }
+  });
+});
+
+describe('buildContext', () => {
+  it('resolves root against cwd and keeps noFs false', () => {
+    const ctx = buildContext({ noFs: false, root: 'examples' });
+    expect(ctx.root).toBe(resolve('examples'));
+    expect(ctx.noFs).toBe(false);
+  });
+
+  it('defaults root to cwd when omitted', () => {
+    const ctx = buildContext({ noFs: false });
+    expect(ctx.root).toBe(resolve(process.cwd()));
+  });
+
+  it('drops root entirely under noFs', () => {
+    const ctx = buildContext({ noFs: true, root: 'examples' });
+    expect(ctx.root).toBeUndefined();
+    expect(ctx.noFs).toBe(true);
+  });
+
+  it('uses the bundled registry unless one is given', () => {
+    const given = defaultIconRegistry();
+    expect(buildContext({ noFs: true, icons: given }).icons).toBe(given);
+    expect(buildContext({ noFs: true }).icons).not.toBe(given);
+  });
+});
+
+describe('buildServer', () => {
+  it('returns a server named diagrammar at SERVER_VERSION', async () => {
+    const server = buildServer(buildContext({ noFs: true }));
+    // McpServer exposes the low-level Server; its `initialize` result carries serverInfo.
+    expect(server.server).toBeDefined();
+    await server.close();
   });
 });

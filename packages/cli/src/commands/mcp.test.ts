@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { mkdir, mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { PassThrough } from 'node:stream';
+import { join, resolve } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { run, help } from './mcp.js';
 
@@ -178,12 +179,94 @@ describe('mcp command', () => {
     }
   });
 
-  it('help documents Streamable HTTP flags and never mentions stdio', () => {
+  it('help documents the HTTP flags and --stdio', () => {
     expect(help).toContain('--port');
     expect(help).toContain('--host');
     expect(help).toContain('--root');
     expect(help).toContain('--no-fs');
     expect(help).toContain('--allow-origin');
-    expect(help.toLowerCase()).not.toContain('stdio');
+    expect(help).toContain('--stdio');
+    expect(help).toContain(
+      'Use --stdio when an MCP client spawns the server itself (Claude Code plugin, editors); use the HTTP server for a long-running shared instance.',
+    );
+  });
+
+  it.each([
+    ['--stdio', '--port', '1234'],
+    ['--stdio', '--port', '3737'],
+    ['--stdio', '--host', '127.0.0.1'],
+    ['--stdio', '--allow-origin', 'http://a'],
+  ])('rejects %s %s %s with a usage error and exit 1', async (...argv) => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const code = await run([...argv, '--no-fs']);
+    expect(code).toBe(1);
+    expect(errSpy).toHaveBeenCalledTimes(1);
+    expect(errSpy).toHaveBeenCalledWith(
+      'mcp: --stdio cannot be combined with --port, --host or --allow-origin',
+    );
+  });
+
+  it('--stdio --no-fs announces itself on stderr and exits 0 when stdin ends', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const stdin = new PassThrough();
+    const stdout = new PassThrough();
+    const runPromise = run(['--stdio', '--no-fs'], { stdin, stdout });
+    await new Promise((r) => setTimeout(r, 100));
+    expect(errSpy).toHaveBeenCalledWith(
+      'diagrammar MCP server serving over stdio (no filesystem access)',
+    );
+    stdin.end();
+    expect(await runPromise).toBe(0);
+  });
+
+  it('--stdio --root <dir> reports the absolute root', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'diagrammar-mcp-stdio-root-'));
+    try {
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const stdin = new PassThrough();
+      const stdout = new PassThrough();
+      const runPromise = run(['--stdio', '--root', dir], { stdin, stdout });
+      await new Promise((r) => setTimeout(r, 100));
+      expect(errSpy).toHaveBeenCalledWith(
+        `diagrammar MCP server serving over stdio (root: ${resolve(dir)})`,
+      );
+      stdin.end();
+      expect(await runPromise).toBe(0);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('--stdio accepts --icons', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'diagrammar-mcp-stdio-icons-'));
+    try {
+      await writeIconSetDir(join(dir, 'aws'));
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const stdin = new PassThrough();
+      const stdout = new PassThrough();
+      const runPromise = run(['--stdio', '--no-fs', '--icons', join(dir, 'aws')], {
+        stdin,
+        stdout,
+      });
+      await new Promise((r) => setTimeout(r, 100));
+      stdin.end();
+      expect(await runPromise).toBe(0);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('does not leak SIGINT/SIGTERM listeners after --stdio exits via stdin end', async () => {
+    const sigintBefore = process.listenerCount('SIGINT');
+    const sigtermBefore = process.listenerCount('SIGTERM');
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const stdin = new PassThrough();
+    const stdout = new PassThrough();
+    const runPromise = run(['--stdio', '--no-fs'], { stdin, stdout });
+    await new Promise((r) => setTimeout(r, 100));
+    stdin.end();
+    expect(await runPromise).toBe(0);
+    expect(process.listenerCount('SIGINT')).toBe(sigintBefore);
+    expect(process.listenerCount('SIGTERM')).toBe(sigtermBefore);
   });
 });

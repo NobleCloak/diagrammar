@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "noblecloak",
+  "description": "NobleCloak plugins for Claude Code.",
+  "owner": { "name": "NobleCloak", "url": "https://github.com/NobleCloak" },
+  "plugins": [
+    {
+      "name": "diagrammar",
+      "description": "Author, validate, patch and render Diagrammar YAML diagrams — skill plus MCP server.",
+      "source": "./plugin",
+      "author": { "name": "NobleCloak", "url": "https://github.com/NobleCloak" },
+      "homepage": "https://github.com/NobleCloak/diagrammar",
+      "license": "Apache-2.0",
+      "keywords": ["diagram", "diagram-as-code", "mcp", "yaml"]
+    }
+  ]
+}
