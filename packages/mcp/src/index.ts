@@ -2,6 +2,8 @@ export { createApp, originGuard, SERVER_VERSION, buildContext, buildServer } fro
 export type { McpAppConfig, CreateAppResult } from './app.js';
 export { serve } from './serve.js';
 export type { ServeConfig, ServeResult } from './serve.js';
+export { serveStdio } from './stdio.js';
+export type { StdioServeResult, StdioStreams } from './stdio.js';
 export { writeAtomic } from './fs.js';
 export type { WriteAtomicOptions } from './fs.js';
 export { seedRemovalOps } from './tools/create.js';
