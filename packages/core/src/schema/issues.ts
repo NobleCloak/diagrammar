@@ -67,8 +67,14 @@ function resolveIssue(issue: ZodIssue, rawValue: unknown): ValidationIssue[] {
  * what a typo'd/missing `type` should report, so pass it through as-is
  * rather than trying to resolve a branch that was never attempted.
  */
+/** Zod 4's message for an `invalid_union` issue that carries no custom `error`. */
+const ZOD_DEFAULT_UNION_MESSAGE = 'Invalid input';
+
 function resolveUnionIssue(issue: ZodUnionIssue, rawValue: unknown): ValidationIssue[] {
-  if (issue.errors.length === 0) {
+  // A union declared with its own `error` (ThemeSchema, IconRefSchema) has
+  // already said what a value must look like; blaming one regex branch would
+  // replace that sentence with Zod's raw "must match pattern /.../" text.
+  if (issue.errors.length === 0 || issue.message !== ZOD_DEFAULT_UNION_MESSAGE) {
     return [{ path: formatZodPath(issue.path), message: issue.message }];
   }
 
