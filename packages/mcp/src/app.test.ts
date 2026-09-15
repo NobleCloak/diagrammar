@@ -1,7 +1,9 @@
 import { describe, it, expect, afterEach, vi, type MockInstance } from 'vitest';
 import { Hono } from 'hono';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
-import { createApp, originGuard, type McpAppConfig } from './app.js';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { createApp, originGuard, SERVER_VERSION, type McpAppConfig } from './app.js';
 
 function initializeBody(id: number): string {
   return JSON.stringify({
@@ -279,5 +281,35 @@ describe('originGuard', () => {
     const app = appWithGuard(['https://app.example.com']);
     const res = await app.request('/test', { headers: { origin: 'https://app.example.com' } });
     expect(res.status).toBe(200);
+  });
+});
+
+describe('server version', () => {
+  it('SERVER_VERSION is the package.json version, not a hand-maintained string', () => {
+    const manifest = JSON.parse(
+      readFileSync(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8'),
+    ) as { version: string };
+    expect(SERVER_VERSION).toBe(manifest.version);
+    expect(SERVER_VERSION).toMatch(/^\d+\.\d+\.\d+/);
+  });
+
+  it('the initialize handshake announces that version', async () => {
+    const { app, closeSessions } = createApp({ noFs: true });
+    try {
+      const res = await app.request('/mcp', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          accept: 'application/json, text/event-stream',
+        },
+        body: initializeBody(1),
+      });
+      const payload = (await readJsonRpcResponse(res)) as {
+        result: { serverInfo: { name: string; version: string } };
+      };
+      expect(payload.result.serverInfo).toEqual({ name: 'diagrammar', version: SERVER_VERSION });
+    } finally {
+      await closeSessions();
+    }
   });
 });

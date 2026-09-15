@@ -1,4 +1,4 @@
-export { createApp, originGuard } from './app.js';
+export { createApp, originGuard, SERVER_VERSION } from './app.js';
 export type { McpAppConfig, CreateAppResult } from './app.js';
 export { serve } from './serve.js';
 export type { ServeConfig, ServeResult } from './serve.js';

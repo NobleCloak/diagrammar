@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Hono } from 'hono';
 import type { Context, Next } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
@@ -32,7 +34,17 @@ export interface CreateAppResult {
 }
 
 const LOCAL_ORIGIN_RE = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
-const SERVER_INFO = { name: 'diagrammar', version: '0.1.0' };
+/**
+ * `..` from either `src/app.ts` (tests) or the built `dist/index.mjs`
+ * (published) is this package's root, so the version announced in the MCP
+ * `initialize` handshake always matches the published package instead of a
+ * hand-maintained string that Changesets never touched.
+ */
+const PACKAGE_JSON_PATH = fileURLToPath(new URL('../package.json', import.meta.url));
+export const SERVER_VERSION = (
+  JSON.parse(readFileSync(PACKAGE_JSON_PATH, 'utf8')) as { version: string }
+).version;
+const SERVER_INFO = { name: 'diagrammar', version: SERVER_VERSION };
 const DEFAULT_SESSION_IDLE_MS = 30 * 60 * 1000;
 const DEFAULT_MAX_SESSIONS = 256;
 const DEFAULT_MAX_BODY_BYTES = 8 * 1024 * 1024;
