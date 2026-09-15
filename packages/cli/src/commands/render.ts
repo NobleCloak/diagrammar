@@ -1,11 +1,17 @@
 import { parseArgs } from 'node:util';
 import { readFile, mkdir, glob } from 'node:fs/promises';
 import { basename, dirname, extname, join } from 'node:path';
-import { fileResolver, render, walkthrough, type RenderOptions } from '@noblecloak/diagrammar-core';
-import { writeAtomic } from '@noblecloak/diagrammar-mcp';
+import {
+  DiagrammarError,
+  fileResolver,
+  render,
+  walkthrough,
+  type RenderOptions,
+} from '@noblecloak/diagrammar-core';
+import { registryWithDirs, writeAtomic } from '@noblecloak/diagrammar-mcp';
 import { describeIoError } from '../ioError.js';
 
-export const help = `diagrammar render <files...> [-o <dir>] [--format png|svg|md|d2] [--view <id>] [--scale 1|2] [--theme <preset|path>] [--no-legend]
+export const help = `diagrammar render <files...> [-o <dir>] [--format png|svg|md|d2] [--view <id>] [--scale 1|2] [--theme <preset|path>] [--icons <dir>]... [--no-legend]
 
 Renders one or more Diagrammar files. <files...> may be globs. Output is
 written beside each input file unless -o is given, in which case the
@@ -17,6 +23,7 @@ Options:
   --view <id>       Render a single named view instead of the root.
   --scale 1|2       PNG scale factor (default 1).
   --theme           Preset (light, dark, colorblind, mono) or a relative theme file path (default: from the file).
+  --icons <dir>     Register an extra icon-set directory (repeatable; Lucide and Simple Icons are always available).
   --no-legend       Suppress the callout legend.
 `;
 
@@ -35,6 +42,7 @@ export async function run(argv: string[]): Promise<number> {
       view: { type: 'string' },
       scale: { type: 'string' },
       theme: { type: 'string' },
+      icons: { type: 'string', multiple: true },
       'no-legend': { type: 'boolean', default: false },
     },
     allowPositionals: true,
@@ -68,6 +76,17 @@ export async function run(argv: string[]): Promise<number> {
   }
   const theme = values.theme;
   const legend = !values['no-legend'];
+
+  let iconRegistry;
+  try {
+    iconRegistry = registryWithDirs(values.icons ?? []);
+  } catch (err) {
+    if (err instanceof DiagrammarError) {
+      console.error(`render: ${err.message}`);
+      return 1;
+    }
+    throw err;
+  }
 
   for (const file of Array.from(files).sort()) {
     let text: string;
@@ -105,6 +124,7 @@ export async function run(argv: string[]): Promise<number> {
       if (theme !== undefined) options.theme = theme;
       options.legend = legend;
       options.resolver = resolver;
+      options.icons = iconRegistry;
 
       const result = await render(text, options);
 

@@ -2,7 +2,34 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { gzipSync } from 'node:zlib';
 import { run } from './render.js';
+
+async function writeIconSetDir(dir: string): Promise<void> {
+  await mkdir(dir, { recursive: true });
+  await writeFile(
+    join(dir, 'index.json'),
+    JSON.stringify({
+      'diagrammar-icons': 1,
+      id: 'aws',
+      version: 't',
+      license: { spdx: 'LicenseRef-AWS', url: 'https://aws.amazon.com/architecture/icons/' },
+      names: ['lambda'],
+      aliases: {},
+    }),
+  );
+  await writeFile(
+    join(dir, 'icons.json.gz'),
+    gzipSync(
+      Buffer.from(
+        JSON.stringify({
+          lambda:
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect width="1" height="1" fill="#f90"/></svg>',
+        }),
+      ),
+    ),
+  );
+}
 
 const FLOWCHART =
   'diagrammar: 1\ntype: flowchart\nnodes:\n  - { id: a }\n  - { id: b }\nedges:\n  - { from: a, to: b }\n';
@@ -150,5 +177,24 @@ describe('render command', () => {
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(await run(['m.yaml', '--format', 'svg'])).toBe(1);
     expect(errSpy.mock.calls.flat().join('\n')).toContain('nope.yaml');
+  }, 30000);
+
+  it('renders bundled and --icons set icons; an unknown icon exits 1 with suggestions', async () => {
+    await writeIconSetDir(join(dir, 'aws'));
+    await writeFile(
+      join(dir, 'i.yaml'),
+      'diagrammar: 1\ntype: architecture\nnodes:\n  - { id: a, icon: lucide/database }\n  - { id: b, shape: image, icon: aws/lambda }\n',
+      'utf8',
+    );
+    expect(await run(['i.yaml', '--format', 'svg', '--icons', 'aws'])).toBe(0);
+    await expect(readFile(join(dir, 'i.svg'), 'utf8')).resolves.toContain('<image');
+    await writeFile(
+      join(dir, 'u.yaml'),
+      'diagrammar: 1\ntype: flowchart\nnodes:\n  - { id: a, icon: lucide/databse }\n',
+      'utf8',
+    );
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(await run(['u.yaml', '--format', 'svg'])).toBe(1);
+    expect(errSpy.mock.calls.flat().join('\n')).toContain('database');
   }, 30000);
 });

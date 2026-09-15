@@ -2,7 +2,34 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { gzipSync } from 'node:zlib';
 import { run } from './validate.js';
+
+async function writeIconSetDir(dir: string): Promise<void> {
+  await mkdir(dir, { recursive: true });
+  await writeFile(
+    join(dir, 'index.json'),
+    JSON.stringify({
+      'diagrammar-icons': 1,
+      id: 'aws',
+      version: 't',
+      license: { spdx: 'LicenseRef-AWS', url: 'https://aws.amazon.com/architecture/icons/' },
+      names: ['lambda'],
+      aliases: {},
+    }),
+  );
+  await writeFile(
+    join(dir, 'icons.json.gz'),
+    gzipSync(
+      Buffer.from(
+        JSON.stringify({
+          lambda:
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect width="1" height="1" fill="#f90"/></svg>',
+        }),
+      ),
+    ),
+  );
+}
 
 describe('validate command', () => {
   let dir: string;
@@ -120,5 +147,30 @@ describe('validate command', () => {
     );
     vi.spyOn(console, 'log').mockImplementation(() => {});
     expect(await run([file])).toBe(0);
+  });
+
+  it('reports unknown icons at their path and accepts --icons sets', async () => {
+    await writeIconSetDir(join(dir, 'aws'));
+    const bad = join(dir, 'bad.yaml');
+    await writeFile(
+      bad,
+      'diagrammar: 1\ntype: flowchart\nnodes:\n  - { id: a, icon: lucide/nope-nope }\n',
+      'utf8',
+    );
+    const good = join(dir, 'good.yaml');
+    await writeFile(
+      good,
+      'diagrammar: 1\ntype: flowchart\nnodes:\n  - { id: a, icon: aws/lambda }\n',
+      'utf8',
+    );
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    expect(await run([bad, good, '--icons', join(dir, 'aws'), '--json'])).toBe(1);
+    const printed = JSON.parse((logSpy.mock.calls[0]?.[0] as string) ?? '[]') as {
+      ok: boolean;
+      issues: { path: string }[];
+    }[];
+    expect(printed[0]?.ok).toBe(false);
+    expect(printed[0]?.issues[0]?.path).toBe('nodes[0].icon');
+    expect(printed[1]?.ok).toBe(true);
   });
 });

@@ -16,6 +16,7 @@ describe('cli dispatcher', () => {
     expect(printed).toContain('validate <files...>');
     expect(printed).toContain('new <file>');
     expect(printed).toContain('themes list');
+    expect(printed).toContain('icons <subcommand>');
     expect(printed).toContain('describe <file>');
     expect(printed).toContain('edit <file>');
     expect(printed).toContain('mcp');
@@ -32,6 +33,7 @@ describe('cli dispatcher', () => {
     expect(printed).toContain('validate <files...>');
     expect(printed).toContain('new <file>');
     expect(printed).toContain('themes list');
+    expect(printed).toContain('icons <subcommand>');
     expect(printed).toContain('describe <file>');
     expect(printed).toContain('edit <file>');
     expect(printed).toContain('mcp');
