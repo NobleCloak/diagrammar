@@ -1,12 +1,24 @@
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { render, parse, walkthrough, shutdown, fileResolver } from '@noblecloak/diagrammar-core';
+import {
+  render,
+  parse,
+  walkthrough,
+  shutdown,
+  fileResolver,
+  IconRegistry,
+} from '@noblecloak/diagrammar-core';
+import { lucide } from '@noblecloak/diagrammar-icons-lucide';
+import { simpleIcons } from '@noblecloak/diagrammar-icons-simple-icons';
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const examplesDir = path.join(rootDir, '..', 'examples');
 const goldensDir = path.join(examplesDir, 'goldens');
 const resolver = fileResolver(examplesDir);
+const icons = new IconRegistry();
+icons.register(lucide);
+icons.register(simpleIcons);
 
 async function main(): Promise<void> {
   await mkdir(goldensDir, { recursive: true });
@@ -20,20 +32,20 @@ async function main(): Promise<void> {
       throw new Error(`${file} failed to parse: ${JSON.stringify(parsed.issues)}`);
     }
 
-    const svgResult = await render(yaml, { format: 'svg', resolver });
+    const svgResult = await render(yaml, { format: 'svg', resolver, icons });
     await writeFile(path.join(goldensDir, `${stem}.svg`), svgResult.svg, 'utf-8');
 
-    const pngResult = await render(yaml, { format: 'png', resolver });
+    const pngResult = await render(yaml, { format: 'png', resolver, icons });
     await writeFile(path.join(goldensDir, `${stem}.png`), pngResult.bytes);
 
     const md = walkthrough(yaml, { imagePath: `${stem}.png` });
     await writeFile(path.join(goldensDir, `${stem}.md`), md, 'utf-8');
 
     for (const view of parsed.diagram.views) {
-      const viewSvg = await render(yaml, { format: 'svg', view: view.id, resolver });
+      const viewSvg = await render(yaml, { format: 'svg', view: view.id, resolver, icons });
       await writeFile(path.join(goldensDir, `${stem}.${view.id}.svg`), viewSvg.svg, 'utf-8');
 
-      const viewPng = await render(yaml, { format: 'png', view: view.id, resolver });
+      const viewPng = await render(yaml, { format: 'png', view: view.id, resolver, icons });
       await writeFile(path.join(goldensDir, `${stem}.${view.id}.png`), viewPng.bytes);
     }
 

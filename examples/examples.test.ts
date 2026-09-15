@@ -16,6 +16,7 @@ const EXAMPLES = [
   'sequence.yaml',
   'annotated.yaml',
   'themed.yaml',
+  'icons.yaml',
 ] as const;
 
 suite('example files pass validate()', () => {
@@ -117,5 +118,15 @@ suite('example files describe() and parse() element counts', () => {
     expect(result.diagram.theme).toBe('./themes/house.yaml');
     if (result.diagram.type === 'sequence') throw new Error('expected a graph diagram');
     expect(result.diagram.nodes).toHaveLength(5);
+  });
+
+  it('icons.yaml uses set-form and path-form icons and an image node', () => {
+    const result = parse(loadExample('icons.yaml'));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    if (result.diagram.type === 'sequence') throw new Error('expected a graph diagram');
+    expect(result.diagram.nodes.filter((n) => n.shape === 'image')).toHaveLength(2);
+    expect(result.diagram.nodes.find((n) => n.id === 'legacy')?.icon).toBe('./icons/custom.svg');
+    expect(result.diagram.groups.every((g) => g.icon !== undefined)).toBe(true);
   });
 });

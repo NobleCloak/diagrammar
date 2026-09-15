@@ -3,10 +3,15 @@ import { readFile, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
-import { render, fileResolver } from '@noblecloak/diagrammar-core';
+import { render, fileResolver, IconRegistry } from '@noblecloak/diagrammar-core';
+import { lucide } from '@noblecloak/diagrammar-icons-lucide';
+import { simpleIcons } from '@noblecloak/diagrammar-icons-simple-icons';
 
 const examplesDir = path.dirname(fileURLToPath(import.meta.url));
 const resolver = fileResolver(examplesDir);
+const icons = new IconRegistry();
+icons.register(lucide);
+icons.register(simpleIcons);
 
 async function loadExample(name: string): Promise<string> {
   return readFile(path.join(examplesDir, name), 'utf-8');
@@ -39,9 +44,14 @@ async function renderInChildProcess(yaml: string, outFile: string): Promise<void
   const scriptDir = await mkdtemp(path.join(examplesDir, '.determinism-'));
   const scriptFile = path.join(scriptDir, 'render.mjs');
   const script = `
-import { render, shutdown, fileResolver } from '@noblecloak/diagrammar-core';
+import { render, shutdown, fileResolver, IconRegistry } from '@noblecloak/diagrammar-core';
+import { lucide } from '@noblecloak/diagrammar-icons-lucide';
+import { simpleIcons } from '@noblecloak/diagrammar-icons-simple-icons';
 import { writeFileSync } from 'node:fs';
-const result = await render(${JSON.stringify(yaml)}, { format: 'png', resolver: fileResolver(${JSON.stringify(examplesDir)}) });
+const icons = new IconRegistry();
+icons.register(lucide);
+icons.register(simpleIcons);
+const result = await render(${JSON.stringify(yaml)}, { format: 'png', resolver: fileResolver(${JSON.stringify(examplesDir)}), icons });
 writeFileSync(${JSON.stringify(outFile)}, Buffer.from(result.bytes));
 await shutdown();
 `;
@@ -61,14 +71,14 @@ await shutdown();
 }
 
 describe('determinism', () => {
-  const STEMS = ['annotated', 'themed'];
+  const STEMS = ['annotated', 'themed', 'icons'];
 
   for (const stem of STEMS) {
     it(`renders ${stem}.yaml to byte-identical PNGs twice in-process and once in a fresh node child process`, async () => {
       const yaml = await loadExample(`${stem}.yaml`);
 
-      const first = await render(yaml, { format: 'png', resolver });
-      const second = await render(yaml, { format: 'png', resolver });
+      const first = await render(yaml, { format: 'png', resolver, icons });
+      const second = await render(yaml, { format: 'png', resolver, icons });
       expect(Buffer.from(second.bytes).equals(Buffer.from(first.bytes))).toBe(true);
 
       const outDir = await mkdtemp(path.join(examplesDir, '.determinism-'));
