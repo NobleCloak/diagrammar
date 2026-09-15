@@ -27,9 +27,10 @@ in Diagrammar's format from the beginning rather than converting later.
 ## The three file skeletons
 
 Every file starts `diagrammar: 1` and a `type:`. Full key reference:
-[`docs/format-guide.md`](format-guide.md) in this repo, or the
-`diagrammar://guide` MCP resource. The examples below are complete, valid files
-you can render as-is — swap in your own ids, labels, and shapes.
+[`docs/format-guide.md`](https://github.com/NobleCloak/diagrammar/blob/main/docs/format-guide.md)
+in the diagrammar repository, or the `diagrammar://guide` MCP resource. The
+examples below are complete, valid files you can render as-is — swap in your
+own ids, labels, and shapes.
 
 **Flowchart** — a process with decisions and branches:
 
@@ -283,9 +284,9 @@ then, in Claude Code:
 claude mcp add --transport http diagrammar http://localhost:3737/mcp
 ```
 
-or copy `.mcp.json.example` in this repo to `.mcp.json` in a project that already
-has the server running. To have a client spawn the server itself without the
-plugin:
+or copy `.mcp.json.example` from the diagrammar repository to `.mcp.json` in a
+project that already has the server running. To have a client spawn the server
+itself without the plugin:
 
 ```bash
 claude mcp add diagrammar -- npx -y @noblecloak/diagrammar@^0.2 mcp --stdio
