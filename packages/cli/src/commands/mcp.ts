@@ -33,6 +33,31 @@ Use --stdio when an MCP client spawns the server itself (Claude Code plugin, edi
 const STDIO_CONFLICT = 'mcp: --stdio cannot be combined with --port, --host or --allow-origin';
 
 /**
+ * Registers `fn` on every (emitter, event) pair; whichever fires first
+ * removes all of them (via `off`) before invoking `fn`, so no signal or
+ * stream listener outlives the shutdown it triggers. Returns an
+ * unsubscribe for a caller that needs to cancel the wait early (e.g.
+ * because startup itself failed before any event could fire).
+ */
+function onFirstEvent(
+  subscriptions: ReadonlyArray<readonly [NodeJS.EventEmitter, string]>,
+  fn: () => void,
+): () => void {
+  let fired = false;
+  const cleanup = (): void => {
+    for (const [emitter, event] of subscriptions) emitter.off(event, handler);
+  };
+  const handler = (): void => {
+    if (fired) return;
+    fired = true;
+    cleanup();
+    fn();
+  };
+  for (const [emitter, event] of subscriptions) emitter.on(event, handler);
+  return cleanup;
+}
+
+/**
  * `streams` is a test seam for the stdio path (in-memory pipes instead of
  * the process's own stdin/stdout); `bin.ts` never passes it.
  */
@@ -125,14 +150,18 @@ export async function run(argv: string[], streams: StdioStreams = {}): Promise<n
   console.error(`diagrammar MCP server listening at http://${result.host}:${result.port}/mcp`);
 
   await new Promise<void>((resolveShutdown) => {
-    const onSignal = (): void => {
-      result
-        .close()
-        .then(() => resolveShutdown())
-        .catch(() => resolveShutdown());
-    };
-    process.once('SIGINT', onSignal);
-    process.once('SIGTERM', onSignal);
+    onFirstEvent(
+      [
+        [process, 'SIGINT'],
+        [process, 'SIGTERM'],
+      ],
+      () => {
+        result
+          .close()
+          .then(() => resolveShutdown())
+          .catch(() => resolveShutdown());
+      },
+    );
   });
 
   return 0;
@@ -140,27 +169,49 @@ export async function run(argv: string[], streams: StdioStreams = {}): Promise<n
 
 async function runStdio(base: McpAppConfig, streams: StdioStreams): Promise<number> {
   const stdin = streams.stdin ?? process.stdin;
-  const result = await serveStdio(base, streams);
+  // Start connecting immediately, but register the stdin/signal listeners
+  // in this same synchronous tick — before awaiting the connect — so an
+  // EOF or signal that lands during startup still triggers shutdown
+  // instead of being missed by a listener that isn't attached yet.
+  const resultPromise = serveStdio(base, streams);
+
+  let resolveShutdown: (() => void) | undefined;
+  const shutdown = new Promise<void>((resolveFn) => {
+    resolveShutdown = resolveFn;
+  });
+  // The parent owns this process: when it closes our stdin (or sends a
+  // signal) we are done. Whichever fires first wins (`onFirstEvent`
+  // removes every listener before invoking this callback), and closing
+  // waits for `serveStdio` itself in case shutdown races the connect.
+  const unsubscribe = onFirstEvent(
+    [
+      [stdin, 'end'],
+      [stdin, 'close'],
+      [process, 'SIGINT'],
+      [process, 'SIGTERM'],
+    ],
+    () => {
+      resultPromise
+        .then((result) => result.close())
+        .catch(() => {})
+        .finally(() => resolveShutdown?.());
+    },
+  );
+
+  try {
+    await resultPromise;
+  } catch (err) {
+    unsubscribe();
+    if (err instanceof DiagrammarError) {
+      console.error(`mcp: ${err.message}`);
+      return 1;
+    }
+    throw err;
+  }
+
   const where = base.noFs ? 'no filesystem access' : `root: ${resolve(base.root ?? process.cwd())}`;
   console.error(`diagrammar MCP server serving over stdio (${where})`);
 
-  // The parent owns this process: when it closes our stdin (or sends a
-  // signal) we are done. Whichever fires first wins; `close()` is idempotent
-  // enough for the second to be a no-op on an already-closed transport.
-  await new Promise<void>((resolveShutdown) => {
-    let done = false;
-    const finish = (): void => {
-      if (done) return;
-      done = true;
-      result
-        .close()
-        .then(() => resolveShutdown())
-        .catch(() => resolveShutdown());
-    };
-    stdin.once('end', finish);
-    stdin.once('close', finish);
-    process.once('SIGINT', finish);
-    process.once('SIGTERM', finish);
-  });
+  await shutdown;
   return 0;
 }

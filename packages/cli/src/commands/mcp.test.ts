@@ -255,4 +255,18 @@ describe('mcp command', () => {
       await rm(dir, { recursive: true, force: true });
     }
   });
+
+  it('does not leak SIGINT/SIGTERM listeners after --stdio exits via stdin end', async () => {
+    const sigintBefore = process.listenerCount('SIGINT');
+    const sigtermBefore = process.listenerCount('SIGTERM');
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const stdin = new PassThrough();
+    const stdout = new PassThrough();
+    const runPromise = run(['--stdio', '--no-fs'], { stdin, stdout });
+    await new Promise((r) => setTimeout(r, 100));
+    stdin.end();
+    expect(await runPromise).toBe(0);
+    expect(process.listenerCount('SIGINT')).toBe(sigintBefore);
+    expect(process.listenerCount('SIGTERM')).toBe(sigtermBefore);
+  });
 });

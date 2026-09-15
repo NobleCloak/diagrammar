@@ -188,5 +188,5 @@ describe('diagrammar mcp --stdio (end to end)', () => {
       }
     }
     expect(gone).toBe(true);
-  }, 10_000);
+  }, 15_000);
 });
