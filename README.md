@@ -135,7 +135,7 @@ See [`docs/format-guide.md`](docs/format-guide.md) for the full YAML schema and
 
 ## MCP server
 
-Diagrammar ships a Streamable HTTP MCP server with eight tools
+Diagrammar ships an MCP server (Streamable HTTP, or stdio with --stdio) with eight tools
 (`diagrammar_list`, `diagrammar_describe`, `diagrammar_validate`,
 `diagrammar_create`, `diagrammar_edit`, `diagrammar_render`, `diagrammar_schema`,
 `diagrammar_icons`) and three resources (`diagrammar://schema/v1`,
@@ -163,6 +163,24 @@ hosting behind a load balancer (v1 ships no authentication for that mode). Under
 `diagrammar_render` work purely against inline `source` text, while
 `diagrammar_schema` and `diagrammar_icons` take no `path` or `source`
 argument and never touch the server root.
+
+### Spawned by the client (stdio)
+
+When an MCP client wants to own the server process (the Claude Code plugin,
+editors), run it over stdio instead. The root defaults to the client's working
+directory unless `--root` is passed; `--port`, `--host` and `--allow-origin`
+are HTTP-only and rejected.
+
+```bash
+claude mcp add diagrammar -- npx -y @noblecloak/diagrammar@^0.2 mcp --stdio
+```
+
+Or install the plugin, which registers the skill and this server together:
+
+```bash
+claude plugin marketplace add NobleCloak/diagrammar
+claude plugin install diagrammar@noblecloak
+```
 
 TypeScript consumers building an MCP client under `exactOptionalPropertyTypes`
 will need a one-line `as Transport` bridge when passing a

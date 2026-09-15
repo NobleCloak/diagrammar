@@ -1,7 +1,7 @@
 {
   "name": "@noblecloak/diagrammar-mcp",
   "version": "0.2.0",
-  "description": "Streamable HTTP MCP server for Diagrammar diagrams.",
+  "description": "MCP server for Diagrammar diagrams (Streamable HTTP and stdio).",
   "type": "module",
   "license": "Apache-2.0",
   "homepage": "https://github.com/NobleCloak/diagrammar#readme",
