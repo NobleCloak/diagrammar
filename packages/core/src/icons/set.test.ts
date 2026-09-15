@@ -1,0 +1,89 @@
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { gzipSync } from 'node:zlib';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { memoryIconSet, openIconSetDir, svgDataUri } from './set.js';
+
+const SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24"/></svg>';
+
+describe('svgDataUri', () => {
+  it('base64-encodes as an svg+xml data URI', () => {
+    expect(svgDataUri('<svg/>')).toBe(
+      `data:image/svg+xml;base64,${Buffer.from('<svg/>').toString('base64')}`,
+    );
+  });
+});
+
+describe('memoryIconSet', () => {
+  it('serves names sorted, aliases, and svgs after load', async () => {
+    const set = memoryIconSet('t', { zeta: SVG, alpha: SVG }, { alpha: ['first'] });
+    expect(set.id).toBe('t');
+    expect(set.get('alpha')).toBeUndefined();
+    await set.load();
+    expect(set.names()).toEqual(['alpha', 'zeta']);
+    expect(set.get('alpha')).toBe(SVG);
+    expect(set.aliases('alpha')).toEqual(['first']);
+    expect(set.aliases('zeta')).toEqual([]);
+  });
+});
+
+describe('openIconSetDir', () => {
+  let dir: string;
+  beforeEach(async () => {
+    dir = await mkdtemp(join(tmpdir(), 'diagrammar-iconset-'));
+  });
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  async function writeSet(
+    names: Record<string, string>,
+    aliases: Record<string, string[]> = {},
+  ): Promise<void> {
+    await writeFile(
+      join(dir, 'index.json'),
+      JSON.stringify({
+        'diagrammar-icons': 1,
+        id: 'demo',
+        version: '1.2.3',
+        license: { spdx: 'MIT', url: 'https://example.test/license' },
+        names: Object.keys(names).sort(),
+        aliases,
+      }),
+    );
+    await writeFile(join(dir, 'icons.json.gz'), gzipSync(Buffer.from(JSON.stringify(names))));
+  }
+
+  it('reads metadata synchronously and icons lazily from icons.json.gz', async () => {
+    await writeSet({ box: SVG, disc: SVG }, { disc: ['database'] });
+    const set = openIconSetDir(dir);
+    expect(set.id).toBe('demo');
+    expect(set.version).toBe('1.2.3');
+    expect(set.license.spdx).toBe('MIT');
+    expect(set.names()).toEqual(['box', 'disc']);
+    expect(set.get('box')).toBeUndefined();
+    await set.load();
+    await set.load();
+    expect(set.get('box')).toBe(SVG);
+    expect(set.aliases('disc')).toEqual(['database']);
+  });
+
+  it('throws icon_set_invalid when index.json is missing or malformed', async () => {
+    expect(() => openIconSetDir(dir)).toThrowError(
+      expect.objectContaining({ code: 'icon_set_invalid' }),
+    );
+    await writeFile(join(dir, 'index.json'), '{"id":"x"}');
+    expect(() => openIconSetDir(dir)).toThrowError(
+      expect.objectContaining({ code: 'icon_set_invalid' }),
+    );
+  });
+
+  it('rejects at load() when icons.json.gz is missing', async () => {
+    await writeSet({});
+    await rm(join(dir, 'icons.json.gz'));
+    const set = openIconSetDir(dir);
+    await expect(set.load()).rejects.toMatchObject({ code: 'icon_set_invalid' });
+  });
+});
