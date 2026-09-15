@@ -9,7 +9,9 @@ import type {
 } from '../model/types.js';
 import type { ResolvedTheme } from '../theme/types.js';
 import { mergeStyle } from '../theme/merge.js';
+import type { ResolvedIcons } from '../icons/types.js';
 import { d2ShapeForParticipant } from './shapes.js';
+import { iconLine } from './graph.js';
 import { d2String, quoteKey, styleLines, themeOverrideLines, DIM_OPACITY_LINE } from './style.js';
 
 /**
@@ -103,6 +105,7 @@ export function compileSequence(
   model: SequenceDiagram,
   view?: ViewModel,
   theme?: ResolvedTheme,
+  icons?: ResolvedIcons,
 ): string {
   const focus = view !== undefined ? new Set(view.focus) : undefined;
   const lines: string[] = [];
@@ -127,6 +130,7 @@ export function compileSequence(
     lines.push(`  ${quoteKey(p.id)}: {`);
     lines.push(`    shape: ${d2ShapeForParticipant(p.participantKind)}`);
     lines.push(`    label: ${d2String(p.label)}`);
+    if (p.icon !== undefined) lines.push(`    ${iconLine(icons, p.id, p.icon)}`);
     for (const l of styleLines(
       mergeStyle(theme, { family: 'participant', kind: p.participantKind }, p.style),
       dim,

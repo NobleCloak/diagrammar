@@ -7,6 +7,7 @@ import { compileAndRender } from '../engine/index.js';
 import type { Diagram, GraphDiagram, SequenceDiagram } from '../model/types.js';
 import type { LaidOutConnection } from '../engine/types.js';
 import { buildTheme, presetTheme, resolveTheme } from '../theme/index.js';
+import { svgDataUri } from '../icons/set.js';
 
 function fixture(name: string, ext: 'yaml' | 'd2'): string {
   return readFileSync(
@@ -327,5 +328,50 @@ describe('compile with a theme', () => {
     expect(d2).toContain(
       '    target-arrowhead: {\n      shape: arrow\n    }\n    style.opacity: 0.25\n  }',
     );
+  });
+});
+
+const ICON_URI = svgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"/>');
+
+describe('compile with icons (spec §3.4)', () => {
+  const graphYaml =
+    'diagrammar: 1\ntype: architecture\ngroups:\n  - { id: g, icon: lucide/cloud }\nnodes:\n  - { id: fn, shape: image, icon: lucide/zap, in: g }\n  - { id: db, shape: cylinder, icon: lucide/database }\n';
+  it('emits a quoted icon line after the label for groups and nodes, and shape: image', () => {
+    const p = parse(graphYaml);
+    if (!p.ok) throw new Error('fixture');
+    const icons = new Map([
+      ['g', ICON_URI],
+      ['fn', ICON_URI],
+      ['db', ICON_URI],
+    ]);
+    const { d2 } = compile(p.diagram, undefined, undefined, icons);
+    expect(d2).toContain(`"g": {\n  label: "g"\n  icon: "${ICON_URI}"\n}`);
+    expect(d2).toContain(`"g"."fn": {\n  shape: image\n  label: "fn"\n  icon: "${ICON_URI}"\n}`);
+    expect(d2).toContain(`"db": {\n  shape: cylinder\n  label: "db"\n  icon: "${ICON_URI}"\n}`);
+  });
+  it('emits participant icons inside seq', () => {
+    const p = parse(
+      'diagrammar: 1\ntype: sequence\nparticipants:\n  - { id: u, kind: actor, icon: lucide/user }\n',
+    );
+    if (!p.ok) throw new Error('fixture');
+    const { d2 } = compile(p.diagram, undefined, undefined, new Map([['u', ICON_URI]]));
+    expect(d2).toContain(
+      `  "u": {\n    shape: person\n    label: "u"\n    icon: "${ICON_URI}"\n  }`,
+    );
+  });
+  it('throws icon_unresolved when an element with an icon has no resolved entry', () => {
+    const p = parse(graphYaml);
+    if (!p.ok) throw new Error('fixture');
+    expect(() => compile(p.diagram, undefined, undefined, new Map())).toThrowError(
+      expect.objectContaining({ code: 'icon_unresolved' }),
+    );
+    expect(() => compile(p.diagram)).toThrowError(
+      expect.objectContaining({ code: 'icon_unresolved' }),
+    );
+  });
+  it('is byte-identical to before for a diagram without icons, whatever the icons argument', () => {
+    const p = parse('diagrammar: 1\ntype: flowchart\nnodes:\n  - { id: a }\n');
+    if (!p.ok) throw new Error('fixture');
+    expect(compile(p.diagram, undefined, undefined, new Map()).d2).toBe(compile(p.diagram).d2);
   });
 });

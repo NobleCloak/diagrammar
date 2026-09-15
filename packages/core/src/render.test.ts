@@ -187,3 +187,58 @@ describe('render with a themed sequence diagram', () => {
     expect(result.svg).toContain('#33cc99');
   }, 30000);
 });
+
+import { IconRegistry } from './icons/registry.js';
+import { memoryIconSet } from './icons/set.js';
+
+const ICON_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="4" fill="#FF9900"/></svg>';
+const icons = new IconRegistry();
+icons.register(memoryIconSet('lucide', { database: ICON_SVG, zap: ICON_SVG, cloud: ICON_SVG }));
+
+describe('render with icons (real D2/resvg)', () => {
+  it('draws an inline <image> for a node icon, an image-shaped node, a group icon and a participant icon', async () => {
+    const graph = await render(
+      'diagrammar: 1\ntype: architecture\ngroups:\n  - { id: g, label: Edge, icon: lucide/cloud }\nnodes:\n  - { id: fn, label: Lambda, shape: image, icon: lucide/zap, in: g }\n  - { id: db, label: DB, shape: cylinder, icon: lucide/database }\nedges:\n  - { from: fn, to: db }\n',
+      { format: 'svg', icons },
+    );
+    expect((graph.svg.match(/<image\b/g) ?? []).length).toBe(3);
+    expect(graph.svg).toContain('data:image/svg+xml;base64,');
+    const seq = await render(
+      'diagrammar: 1\ntype: sequence\nparticipants:\n  - { id: u, kind: actor, icon: lucide/database }\n  - { id: s }\nmessages:\n  - { from: u, to: s, label: hi }\n',
+      { format: 'svg', icons },
+    );
+    expect((seq.svg.match(/<image\b/g) ?? []).length).toBe(1);
+  }, 30000);
+
+  it('reads a local .svg icon through the resolver and rasterizes to PNG', async () => {
+    const resolver = memoryResolver({ 'icons/custom.svg': ICON_SVG });
+    const result = await render(
+      'diagrammar: 1\ntype: flowchart\nnodes:\n  - { id: a, icon: ./icons/custom.svg }\n',
+      { format: 'png', resolver },
+    );
+    expect(Array.from(result.bytes.slice(0, 8))).toEqual([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+    ]);
+  }, 30000);
+
+  it('fails before the engine with icon_unknown for an unknown icon name, naming a nearest match', async () => {
+    await expect(
+      render('diagrammar: 1\ntype: flowchart\nnodes:\n  - { id: a, icon: lucide/databse }\n', {
+        format: 'svg',
+        icons,
+      }),
+    ).rejects.toMatchObject({
+      code: 'icon_unknown',
+      message: expect.stringContaining('database') as string,
+    });
+  }, 30000);
+
+  it('is deterministic with icons', async () => {
+    const yaml =
+      'diagrammar: 1\ntype: flowchart\nnodes:\n  - { id: a, shape: image, icon: lucide/zap }\n';
+    const a = await render(yaml, { format: 'png', icons });
+    const b = await render(yaml, { format: 'png', icons });
+    expect(Buffer.from(a.bytes).equals(Buffer.from(b.bytes))).toBe(true);
+  }, 30000);
+});

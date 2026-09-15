@@ -22,4 +22,12 @@ describe('public API surface (Plan 01 portion)', () => {
     expect(typeof core.checkThemeRef).toBe('function');
     expect(typeof core.generateThemeJsonSchema).toBe('function');
   });
+
+  it('exports the icon surface', () => {
+    expect(typeof core.IconRegistry).toBe('function');
+    expect(typeof core.openIconSetDir).toBe('function');
+    expect(typeof core.sanitizeSvg).toBe('function');
+    expect(typeof core.checkIconRefs).toBe('function');
+    expect(core.ICON_MAX_BYTES).toBe(262144);
+  });
 });

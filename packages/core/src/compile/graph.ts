@@ -1,8 +1,22 @@
 import type { GraphDiagram, ViewModel } from '../model/types.js';
 import type { ResolvedTheme } from '../theme/types.js';
 import { mergeStyle } from '../theme/merge.js';
+import { DiagrammarError } from '../errors.js';
+import type { ResolvedIcons } from '../icons/types.js';
 import { d2ShapeFor } from './shapes.js';
 import { d2String, quoteKey, styleLines, themeOverrideLines } from './style.js';
+
+/** Looks up an element's resolved icon; a miss is a programming error (render always resolves first). */
+export function iconLine(icons: ResolvedIcons | undefined, key: string, ref: string): string {
+  const uri = icons?.get(key);
+  if (uri === undefined) {
+    throw new DiagrammarError(
+      `icon "${ref}" on "${key}" was not resolved before compile`,
+      'icon_unresolved',
+    );
+  }
+  return `icon: ${d2String(uri)}`;
+}
 
 /** Absolute D2 key for a group, honoring `parent` chains. */
 export function absGroupKey(model: GraphDiagram, groupId: string): string {
@@ -24,7 +38,12 @@ export function absNodeKey(model: GraphDiagram, nodeId: string): string {
  * group's absolute key. When `view` is given, every group/node/edge whose
  * key is not in `view.focus` gets an extra `style.opacity: 0.25` line.
  */
-export function compileGraph(model: GraphDiagram, view?: ViewModel, theme?: ResolvedTheme): string {
+export function compileGraph(
+  model: GraphDiagram,
+  view?: ViewModel,
+  theme?: ResolvedTheme,
+  icons?: ResolvedIcons,
+): string {
   const focus = view !== undefined ? new Set(view.focus) : undefined;
   const lines: string[] = [];
 
@@ -48,6 +67,7 @@ export function compileGraph(model: GraphDiagram, view?: ViewModel, theme?: Reso
     const dim = focus !== undefined && !focus.has(group.id);
     lines.push(`${quoteKey(key)}: {`);
     lines.push(`  label: ${d2String(group.label)}`);
+    if (group.icon !== undefined) lines.push(`  ${iconLine(icons, group.id, group.icon)}`);
     for (const l of styleLines(mergeStyle(theme, { family: 'group' }, group.style), dim))
       lines.push(`  ${l}`);
     lines.push('}');
@@ -60,6 +80,7 @@ export function compileGraph(model: GraphDiagram, view?: ViewModel, theme?: Reso
     lines.push(`${quoteKey(key)}: {`);
     lines.push(`  shape: ${d2ShapeFor(node.shape)}`);
     lines.push(`  label: ${d2String(node.label)}`);
+    if (node.icon !== undefined) lines.push(`  ${iconLine(icons, node.id, node.icon)}`);
     for (const l of styleLines(
       mergeStyle(theme, { family: 'node', shape: node.shape }, node.style),
       dim,

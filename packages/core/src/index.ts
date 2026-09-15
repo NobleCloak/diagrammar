@@ -43,6 +43,34 @@ export type {
   StyleTarget,
 } from './theme/index.js';
 
+export {
+  ICON_SET_REF_RE,
+  ICON_MAX_BYTES,
+  ICON_SET_DATA_FILE,
+  ICON_SET_INDEX_FILE,
+  isIconPathRef,
+  parseIconRef,
+  sanitizeSvg,
+  memoryIconSet,
+  openIconSetDir,
+  svgDataUri,
+  IconRegistry,
+  rankMatches,
+  resolveIcons,
+  checkIconRefs,
+  iconSites,
+} from './icons/index.js';
+export type {
+  IconRef,
+  SanitizeOptions,
+  IconLicense,
+  IconMatch,
+  IconSet,
+  IconSetIndex,
+  ResolvedIcon,
+  ResolvedIcons,
+} from './icons/index.js';
+
 export { render } from './render.js';
 export type { RenderOptions, RenderResult } from './render.js';
 export type { LayoutSidecar, LayoutEntry } from './overlay/types.js';

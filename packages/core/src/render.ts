@@ -9,6 +9,8 @@ import { getRasterizer } from './raster/index.js';
 import type { AssetResolver } from './assets/resolver.js';
 import { resolveTheme } from './theme/load.js';
 import type { LayoutEngine } from './model/types.js';
+import type { IconRegistry } from './icons/registry.js';
+import { resolveIcons } from './icons/resolve.js';
 
 export interface RenderOptions {
   /** Output format, default `png`. */
@@ -23,8 +25,8 @@ export interface RenderOptions {
    */
   theme?: string;
   /**
-   * Supplies theme files (and, in a later release, icons) named by relative
-   * path. Required whenever the document or `theme` uses the path form;
+   * Supplies theme files and path-form icons named by relative path.
+   * Required whenever the document or `theme` uses the path form;
    * `fileResolver(dirname(file))` is the usual choice. See spec §6.
    */
   resolver?: AssetResolver;
@@ -32,6 +34,12 @@ export interface RenderOptions {
   legend?: boolean;
   /** Include the compiled D2 text in the result. */
   emitD2?: boolean;
+  /**
+   * Icon sets available to `icon:` references in the set form
+   * (`lucide/database`). Path-form icons go through `resolver`. Without a
+   * registry a set-form reference fails with `icon_unknown` (spec §5.1).
+   */
+  icons?: IconRegistry;
 }
 
 export interface RenderResult {
@@ -63,6 +71,9 @@ export interface RenderResult {
  * document's own `theme:`) surfaces as `DiagrammarError` with code
  * `theme_invalid`, `asset_resolver_missing`, `asset_not_found`, or
  * `asset_outside_base`, thrown by `resolveTheme()` before the engine runs.
+ * Icon resolution (`icon:` references on groups, nodes, or participants)
+ * surfaces as `DiagrammarError` with code `icon_unknown` or `icon_invalid`,
+ * thrown by `resolveIcons()` before the engine runs.
  */
 export async function render(yaml: string, opts: RenderOptions = {}): Promise<RenderResult> {
   const parsed = parse(yaml);
@@ -71,10 +82,11 @@ export async function render(yaml: string, opts: RenderOptions = {}): Promise<Re
 
   const format = opts.format ?? 'png';
   const theme = await resolveTheme(opts.theme ?? model.theme, opts.resolver);
+  const icons = await resolveIcons(model, opts.icons, opts.resolver);
   const layout: LayoutEngine = model.layout;
   const legend = opts.legend ?? true;
 
-  const { d2 } = compile(model, opts.view, theme);
+  const { d2 } = compile(model, opts.view, theme, icons);
   const { svg, laidOut } = await compileAndRender(d2, { layout, themeId: theme.d2ThemeId });
   const keyMap = createKeyMap(model, laidOut);
 
