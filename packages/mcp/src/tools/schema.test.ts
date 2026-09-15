@@ -3,6 +3,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { register } from './schema.js';
+import { defaultIconRegistry } from '../icons.js';
 import type { ToolContext } from '../fs.js';
 
 async function connectedClient(ctx: ToolContext): Promise<Client> {
@@ -17,7 +18,11 @@ async function connectedClient(ctx: ToolContext): Promise<Client> {
 
 describe('diagrammar_schema', () => {
   it('returns the JSON Schema and the authoring guide', async () => {
-    const client = await connectedClient({ root: undefined, noFs: true });
+    const client = await connectedClient({
+      root: undefined,
+      noFs: true,
+      icons: defaultIconRegistry(),
+    });
     const result = await client.callTool({ name: 'diagrammar_schema', arguments: {} });
     const content = result.content as { type: string; text: string }[];
     expect(content).toHaveLength(2);
@@ -28,7 +33,11 @@ describe('diagrammar_schema', () => {
   });
 
   it('returns the theme-file schema for kind: "theme"', async () => {
-    const client = await connectedClient({ root: undefined, noFs: true });
+    const client = await connectedClient({
+      root: undefined,
+      noFs: true,
+      icons: defaultIconRegistry(),
+    });
     const result = await client.callTool({
       name: 'diagrammar_schema',
       arguments: { kind: 'theme' },

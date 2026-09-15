@@ -8,6 +8,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { describe as describeDiagram } from '@noblecloak/diagrammar-core';
 import { register } from './create.js';
 import { register as registerSchema } from './schema.js';
+import { defaultIconRegistry } from '../icons.js';
 import type { ToolContext } from '../fs.js';
 
 async function connectedClient(ctx: ToolContext): Promise<Client> {
@@ -32,7 +33,7 @@ describe('diagrammar_create', () => {
   });
 
   it('writes a minimal valid file with no seed elements, stripping the placeholder node', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_create',
       arguments: { path: 'new.yaml', type: 'flowchart', title: 'Hello' },
@@ -49,7 +50,7 @@ describe('diagrammar_create', () => {
   });
 
   it("applies seed nodes and edges, leaving exactly the caller's elements", async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_create',
       arguments: {
@@ -75,7 +76,7 @@ describe('diagrammar_create', () => {
   });
 
   it('applies seed participants and messages on a sequence diagram, stripping the placeholders', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_create',
       arguments: {
@@ -102,7 +103,7 @@ describe('diagrammar_create', () => {
   });
 
   it('writes a minimal valid sequence file with no seed elements, stripping the placeholders', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_create',
       arguments: { path: 'empty-seq.yaml', type: 'sequence' },
@@ -116,7 +117,7 @@ describe('diagrammar_create', () => {
   });
 
   it('is a tool error when a seed op is invalid (e.g. duplicate id)', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_create',
       arguments: {
@@ -130,7 +131,7 @@ describe('diagrammar_create', () => {
   });
 
   it('is a tool error (exists) when the target file already exists', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     await writeFile(join(root, 'already.yaml'), 'diagrammar: 1\ntype: flowchart\n', 'utf8');
     const result = await client.callTool({
       name: 'diagrammar_create',
@@ -146,7 +147,7 @@ describe('diagrammar_create', () => {
 
   it('is not registered at all when noFs is true', async () => {
     const server = new McpServer({ name: 'test', version: '0.0.0' });
-    const ctx: ToolContext = { root: undefined, noFs: true };
+    const ctx: ToolContext = { root: undefined, noFs: true, icons: defaultIconRegistry() };
     // Register a tool that does survive --no-fs first (the real production
     // shape), so tools/list has something to succeed against instead of a
     // server with zero tools ever registered at all.

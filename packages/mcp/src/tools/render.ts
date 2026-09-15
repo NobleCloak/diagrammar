@@ -142,6 +142,7 @@ export function register(server: McpServer, ctx: ToolContext): void {
         if (args.theme !== undefined) options.theme = args.theme;
         if (args.legend !== undefined) options.legend = args.legend;
         options.resolver = assetResolverFor(ctx, resolvedPath);
+        options.icons = ctx.icons;
 
         const result = await render(text, options);
 

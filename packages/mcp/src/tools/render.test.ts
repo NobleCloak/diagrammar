@@ -6,6 +6,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { register } from './render.js';
+import { defaultIconRegistry } from '../icons.js';
 import type { ToolContext } from '../fs.js';
 
 const FLOWCHART =
@@ -35,7 +36,7 @@ describe('diagrammar_render', () => {
   });
 
   it('returns a PNG image block by default', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_render',
       arguments: { source: FLOWCHART },
@@ -50,7 +51,7 @@ describe('diagrammar_render', () => {
   });
 
   it('returns text-only when returnImage is false', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_render',
       arguments: { source: FLOWCHART, returnImage: false },
@@ -61,7 +62,7 @@ describe('diagrammar_render', () => {
   });
 
   it('returns SVG text for format svg', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_render',
       arguments: { source: FLOWCHART, format: 'svg' },
@@ -73,7 +74,7 @@ describe('diagrammar_render', () => {
   });
 
   it('returns Markdown text for format md', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_render',
       arguments: { source: FLOWCHART, format: 'md' },
@@ -85,7 +86,7 @@ describe('diagrammar_render', () => {
   });
 
   it('derives the sibling PNG basename from "path" for the md walkthrough image', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_render',
       arguments: { path: 'f.yaml', format: 'md' },
@@ -96,7 +97,7 @@ describe('diagrammar_render', () => {
   });
 
   it('uses "diagram.png" as the md walkthrough image for inline "source"', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_render',
       arguments: { source: FLOWCHART, format: 'md' },
@@ -107,7 +108,7 @@ describe('diagrammar_render', () => {
   });
 
   it('writes to outputPath when given, resolved in root', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_render',
       arguments: { source: FLOWCHART, format: 'svg', outputPath: 'out.svg' },
@@ -124,7 +125,11 @@ describe('diagrammar_render', () => {
     // client that sends it anyway just has it silently stripped — the call
     // still succeeds (there's nothing left to fail on), it just never
     // attempts a write.
-    const client = await connectedClient({ root: undefined, noFs: true });
+    const client = await connectedClient({
+      root: undefined,
+      noFs: true,
+      icons: defaultIconRegistry(),
+    });
     const result = await client.callTool({
       name: 'diagrammar_render',
       arguments: { source: FLOWCHART, format: 'svg', outputPath: 'out.svg' },
@@ -137,7 +142,7 @@ describe('diagrammar_render', () => {
   });
 
   it('the payload reports the caller-supplied relative outputPath, never the resolved absolute path (C1)', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_render',
       arguments: { source: FLOWCHART, format: 'svg', outputPath: 'out.svg' },
@@ -152,7 +157,7 @@ describe('diagrammar_render', () => {
   });
 
   it('returns the SVG text in the payload when format is png, returnImage is false, and no outputPath is given', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_render',
       arguments: { source: FLOWCHART, returnImage: false },
@@ -166,7 +171,7 @@ describe('diagrammar_render', () => {
   });
 
   it('omits the svg field when outputPath is given, since the render was not discarded', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_render',
       arguments: { source: FLOWCHART, returnImage: false, outputPath: 'out.png' },
@@ -179,7 +184,11 @@ describe('diagrammar_render', () => {
   });
 
   it('excludes path and outputPath from the registered schema under --no-fs', async () => {
-    const client = await connectedClient({ root: undefined, noFs: true });
+    const client = await connectedClient({
+      root: undefined,
+      noFs: true,
+      icons: defaultIconRegistry(),
+    });
     const tools = await client.listTools();
     const tool = tools.tools.find((t) => t.name === 'diagrammar_render');
     if (tool === undefined) throw new Error('diagrammar_render not found');
@@ -191,7 +200,7 @@ describe('diagrammar_render', () => {
   });
 
   it('includes path and outputPath in the registered schema when fs is enabled', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const tools = await client.listTools();
     const tool = tools.tools.find((t) => t.name === 'diagrammar_render');
     if (tool === undefined) throw new Error('diagrammar_render not found');
@@ -214,7 +223,7 @@ describe('diagrammar_render', () => {
       'diagrammar: 1\ntype: flowchart\ntheme: ./themes/house.yaml\nnodes:\n  - { id: a }\n',
       'utf8',
     );
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_render',
       arguments: { path: 't.yaml', format: 'svg' },
@@ -226,7 +235,11 @@ describe('diagrammar_render', () => {
   }, 30000);
 
   it('under --no-fs a theme path fails with asset_fs_disabled, not a crash', async () => {
-    const client = await connectedClient({ root: undefined, noFs: true });
+    const client = await connectedClient({
+      root: undefined,
+      noFs: true,
+      icons: defaultIconRegistry(),
+    });
     const result = await client.callTool({
       name: 'diagrammar_render',
       arguments: {
@@ -242,7 +255,7 @@ describe('diagrammar_render', () => {
   }, 30000);
 
   it('accepts any preset for theme and never leaks the root on a bad theme path', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const ok = await client.callTool({
       name: 'diagrammar_render',
       arguments: { source: FLOWCHART, theme: 'colorblind', format: 'svg' },
@@ -256,6 +269,40 @@ describe('diagrammar_render', () => {
     const text = (bad.content as { text: string }[])[0]!.text;
     expect(JSON.parse(text)).toMatchObject({ code: 'asset_outside_base' });
     expect(text).not.toContain(root);
+    await client.close();
+  }, 30000);
+
+  it('renders a set-form icon from the bundled registry', async () => {
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
+    const result = await client.callTool({
+      name: 'diagrammar_render',
+      arguments: {
+        source:
+          'diagrammar: 1\ntype: flowchart\nnodes:\n  - { id: a, shape: image, icon: lucide/database }\n',
+        format: 'svg',
+      },
+    });
+    expect(result.isError).toBeFalsy();
+    expect((result.content as { text: string }[])[0]!.text).toContain('<image');
+    await client.close();
+  }, 30000);
+
+  it('an unknown icon is a tool error with nearest suggestions', async () => {
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
+    const result = await client.callTool({
+      name: 'diagrammar_render',
+      arguments: {
+        source: 'diagrammar: 1\ntype: flowchart\nnodes:\n  - { id: a, icon: lucide/databse }\n',
+        format: 'svg',
+      },
+    });
+    expect(result.isError).toBe(true);
+    const payload = JSON.parse((result.content as { text: string }[])[0]!.text) as {
+      code: string;
+      message: string;
+    };
+    expect(payload.code).toBe('icon_unknown');
+    expect(payload.message).toContain('database');
     await client.close();
   }, 30000);
 });

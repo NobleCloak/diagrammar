@@ -7,6 +7,7 @@ import {
   ValidationError,
   normalizeRelativePath,
   type AssetResolver,
+  type IconRegistry,
   type ValidationIssue,
 } from '@noblecloak/diagrammar-core';
 
@@ -14,6 +15,8 @@ export interface ToolContext {
   /** Absolute path to the jailed root directory. Always defined when noFs is false. */
   root: string | undefined;
   noFs: boolean;
+  /** Icon sets available to `icon:` set-form references. */
+  icons: IconRegistry;
 }
 
 /**

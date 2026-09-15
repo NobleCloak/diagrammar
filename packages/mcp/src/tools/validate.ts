@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { checkThemeRef, parse } from '@noblecloak/diagrammar-core';
+import { checkIconRefs, checkThemeRef, parse } from '@noblecloak/diagrammar-core';
 import { assetResolverFor, resolveSource, type ToolContext } from '../fs.js';
 import { withToolErrors } from '../toolError.js';
 
@@ -39,7 +39,7 @@ export function register(server: McpServer, ctx: ToolContext): void {
     {
       title: 'Validate a diagram',
       description:
-        'Validates a Diagrammar YAML document and reports schema/semantic errors, and theme-file errors, with path and line number. An invalid diagram is still a successful call (ok: false with issues), not a tool error.',
+        'Validates a Diagrammar YAML document and reports schema/semantic errors, theme-file errors, and unknown or invalid icons, with path and line number. An invalid diagram is still a successful call (ok: false with issues), not a tool error.',
       inputSchema: validateShapeFor(ctx),
       annotations: { readOnlyHint: true },
     },
@@ -49,10 +49,10 @@ export function register(server: McpServer, ctx: ToolContext): void {
         const parsed = parse(text);
         const result = parsed.ok
           ? await (async () => {
-              const issues = await checkThemeRef(
-                parsed.diagram.theme,
-                assetResolverFor(ctx, resolvedPath),
-              );
+              const resolver = assetResolverFor(ctx, resolvedPath);
+              const themeIssues = await checkThemeRef(parsed.diagram.theme, resolver);
+              const iconIssues = await checkIconRefs(parsed.diagram, ctx.icons, resolver);
+              const issues = [...themeIssues, ...iconIssues];
               return { ok: issues.length === 0, issues };
             })()
           : { ok: false, issues: parsed.issues };

@@ -3,10 +3,11 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { registerResources } from './resources.js';
+import { defaultIconRegistry } from './icons.js';
 
 async function connectedClient() {
   const server = new McpServer({ name: 'test', version: '0.0.0' });
-  registerResources(server, { root: undefined, noFs: true });
+  registerResources(server, { root: undefined, noFs: true, icons: defaultIconRegistry() });
   const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair();
   await server.connect(serverTransport);
   const client = new Client({ name: 'test-client', version: '0.0.0' });

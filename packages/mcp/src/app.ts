@@ -5,13 +5,17 @@ import type { Context, Next } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
+import type { IconRegistry } from '@noblecloak/diagrammar-core';
 import { registerAllTools } from './tools/index.js';
 import { registerResources } from './resources.js';
 import type { ToolContext } from './fs.js';
+import { defaultIconRegistry } from './icons.js';
 
 export interface McpAppConfig {
   root?: string;
   noFs: boolean;
+  /** Icon sets available to `icon:` references. Default: the bundled Lucide and Simple Icons sets. */
+  icons?: IconRegistry;
   allowedOrigins?: string[];
   /** Idle timeout (ms) after which an unused session is closed and evicted. Default 30 minutes. */
   sessionIdleMs?: number;
@@ -63,7 +67,11 @@ function buildServer(ctx: ToolContext): McpServer {
 
 export function createApp(config: McpAppConfig): CreateAppResult {
   const root = config.noFs ? undefined : resolve(config.root ?? process.cwd());
-  const ctx: ToolContext = { root, noFs: config.noFs };
+  const ctx: ToolContext = {
+    root,
+    noFs: config.noFs,
+    icons: config.icons ?? defaultIconRegistry(),
+  };
   const sessionIdleMs = config.sessionIdleMs ?? DEFAULT_SESSION_IDLE_MS;
   const maxSessions = config.maxSessions ?? DEFAULT_MAX_SESSIONS;
   const maxBodyBytes = config.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES;

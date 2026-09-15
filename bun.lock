@@ -84,6 +84,8 @@
         "@hono/node-server": "2.1.1",
         "@modelcontextprotocol/sdk": "1.30.0",
         "@noblecloak/diagrammar-core": "^0.1.1",
+        "@noblecloak/diagrammar-icons-lucide": "^0.0.0",
+        "@noblecloak/diagrammar-icons-simple-icons": "^0.0.0",
         "hono": "4.13.7",
         "zod": "4.6.2",
       },

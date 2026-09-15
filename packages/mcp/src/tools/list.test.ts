@@ -7,6 +7,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { register } from './list.js';
 import { register as registerSchema } from './schema.js';
+import { defaultIconRegistry } from '../icons.js';
 import type { ToolContext } from '../fs.js';
 
 async function connectedClient(ctx: ToolContext): Promise<Client> {
@@ -37,7 +38,7 @@ describe('diagrammar_list', () => {
   });
 
   it('lists diagram files under root', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({ name: 'diagrammar_list', arguments: {} });
     const parsed = JSON.parse((result.content as { text: string }[])[0]!.text) as {
       files: string[];
@@ -48,7 +49,7 @@ describe('diagrammar_list', () => {
 
   it('is not registered at all when noFs is true', async () => {
     const server = new McpServer({ name: 'test', version: '0.0.0' });
-    const ctx: ToolContext = { root: undefined, noFs: true };
+    const ctx: ToolContext = { root: undefined, noFs: true, icons: defaultIconRegistry() };
     // Register a tool that *does* survive --no-fs first, so tools/list has
     // something to succeed against — this is the real production shape
     // (diagrammar_schema is always registered; diagrammar_list is the one
