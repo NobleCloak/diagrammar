@@ -15,6 +15,35 @@ describe('generateJsonSchema', () => {
     const hasUnionKeyword = 'anyOf' in result || 'oneOf' in result;
     expect(hasUnionKeyword).toBe(true);
   });
+
+  it('emits the theme path pattern flagless, spelling out case-insensitivity in the pattern itself', () => {
+    // The top-level schema is a `oneOf` of the graph/sequence file schemas,
+    // each carrying its own `theme` property, so search the serialized
+    // schema rather than navigating one fixed path.
+    const serialized = JSON.stringify(generateJsonSchema());
+    const patterns = [...serialized.matchAll(/"pattern":"((?:\\.|[^"\\])*)"/g)].map(
+      (m) => m[1] ?? '',
+    );
+    expect(patterns.length).toBeGreaterThan(0);
+    // No JSON Schema `pattern` carries regex flags, so the source itself
+    // must already be case-insensitive: it should spell out [yY] rather
+    // than relying on an /i flag that toJSONSchema cannot express.
+    expect(patterns.some((p) => p.includes('[yY]'))).toBe(true);
+  });
+
+  it('emits icon as an anyOf of the two accepted forms, not a bare string', () => {
+    const result = generateJsonSchema();
+    const nodeDefs = JSON.stringify(result);
+    // Structural sanity check: the union produces two `pattern` branches
+    // (set-ref form and .svg path form) rather than a single bare-string
+    // `icon` property (spec §8's published JSON Schema).
+    const iconMatches = [...nodeDefs.matchAll(/"icon":\{"anyOf":\[(\{[^}]*\}),(\{[^}]*\})\]\}/g)];
+    expect(iconMatches.length).toBeGreaterThan(0);
+    for (const match of iconMatches) {
+      expect(match[1]).toContain('"pattern"');
+      expect(match[2]).toContain('"pattern"');
+    }
+  });
 });
 
 const here = dirname(fileURLToPath(import.meta.url));

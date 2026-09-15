@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { isAbsolute, relative, resolve } from 'node:path';
-import { DiagrammarError } from '../errors.js';
+import { DiagrammarError, isErrnoException } from '../errors.js';
 import { normalizeRelativePath } from './paths.js';
 
 /**
@@ -23,10 +23,6 @@ export interface FileResolverOptions {
   root?: string;
 }
 
-function isErrno(error: unknown): error is NodeJS.ErrnoException {
-  return error instanceof Error && 'code' in error;
-}
-
 export function fileResolver(baseDir: string, options: FileResolverOptions = {}): AssetResolver {
   const baseAbs = resolve(baseDir);
   const rootAbs = options.root !== undefined ? resolve(options.root) : undefined;
@@ -45,7 +41,7 @@ export function fileResolver(baseDir: string, options: FileResolverOptions = {})
       try {
         return await readFile(target);
       } catch (error) {
-        if (isErrno(error) && error.code === 'ENOENT') {
+        if (isErrnoException(error) && error.code === 'ENOENT') {
           throw new DiagrammarError(`asset "${relPath}" not found`, 'asset_not_found');
         }
         throw error;

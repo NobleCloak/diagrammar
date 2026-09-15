@@ -5,6 +5,9 @@ import { render } from './render.js';
 import { parse } from './parse.js';
 import { compile } from './compile/index.js';
 import { memoryResolver } from './assets/resolver.js';
+import { IconRegistry } from './icons/registry.js';
+import { memoryIconSet } from './icons/set.js';
+import { ICON_MAX_BYTES } from './icons/sanitize.js';
 
 const fixture = readFileSync(
   fileURLToPath(new URL('../test/fixtures/compile/flowchart-view.yaml', import.meta.url)),
@@ -187,10 +190,6 @@ describe('render with a themed sequence diagram', () => {
     expect(result.svg).toContain('#33cc99');
   }, 30000);
 });
-
-import { IconRegistry } from './icons/registry.js';
-import { memoryIconSet } from './icons/set.js';
-import { ICON_MAX_BYTES } from './icons/sanitize.js';
 
 const ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="4" fill="#FF9900"/></svg>';

@@ -6,17 +6,28 @@ export const ICON_SET_REF_RE = /^[a-z][a-z0-9-]*\/[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
 export type IconRef = { kind: 'set'; set: string; name: string } | { kind: 'path'; path: string };
 
-/** The path form is any reference ending in `.svg` (spec §3.2); it follows the theme path rules. */
+/**
+ * The path form is any reference ending in `.svg` (spec §3.2); it follows
+ * the theme path rules. Written case-insensitively by spelling out each
+ * letter's case rather than with the `i` flag, so a JSON Schema `pattern`
+ * built from the same source (see schema/graph.ts's `IconRefSchema`) stays
+ * correct once `z.toJSONSchema` drops any regex flags. Exported so the
+ * schema layer can reuse the exact same pattern.
+ */
+export const ICON_SVG_PATH_RE = /\.[sS][vV][gG]$/;
+
 export function isIconPathRef(ref: string): boolean {
-  return /\.svg$/i.test(ref);
+  return ICON_SVG_PATH_RE.test(ref);
 }
 
 /**
  * Shared preamble for every `icon_invalid` message: every rejection — set
  * form or path form — must name both accepted forms, so a caller who typed
- * one wrong doesn't need to know the other syntax already existed.
+ * one wrong doesn't need to know the other syntax already existed. Exported
+ * so `schema/graph.ts`'s `IconRefSchema` can reuse it verbatim as the
+ * union's `error` message.
  */
-const ICON_REF_FORMS_MESSAGE =
+export const ICON_REF_FORMS_MESSAGE =
   'must be "<set>/<name>" (e.g. lucide/database) or a relative path ending in .svg';
 
 /**

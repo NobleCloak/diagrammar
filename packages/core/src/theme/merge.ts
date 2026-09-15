@@ -42,6 +42,10 @@ export function mergeStyle(
       family = d.messages;
       kind = d.messageStyles[target.messageStyle];
       break;
+    default: {
+      const exhaustive: never = target;
+      throw new Error(`mergeStyle: unhandled style target family: ${JSON.stringify(exhaustive)}`);
+    }
   }
   const merged: Style = { ...family, ...kind, ...own };
   return Object.keys(merged).length === 0 ? undefined : merged;

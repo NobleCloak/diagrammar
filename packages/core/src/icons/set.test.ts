@@ -80,6 +80,26 @@ describe('openIconSetDir', () => {
     );
   });
 
+  it('names the bad field when index.json fails schema validation', async () => {
+    await writeFile(
+      join(dir, 'index.json'),
+      JSON.stringify({
+        'diagrammar-icons': 1,
+        id: 'demo',
+        version: '1.2.3',
+        license: { spdx: 'MIT', url: 'https://example.test/license' },
+        names: 'not-an-array',
+        aliases: {},
+      }),
+    );
+    expect(() => openIconSetDir(dir)).toThrowError(
+      expect.objectContaining({
+        code: 'icon_set_invalid',
+        message: expect.stringContaining('names') as string,
+      }),
+    );
+  });
+
   it('rejects at load() when icons.json.gz is missing', async () => {
     await writeSet({});
     await rm(join(dir, 'icons.json.gz'));

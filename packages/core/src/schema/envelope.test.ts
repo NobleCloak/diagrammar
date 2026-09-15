@@ -37,6 +37,13 @@ describe('ThemeSchema (spec §3.1)', () => {
   it.each(['./themes/house.yaml', 'house.yml', '../shared/t.yaml'])('accepts path %s', (p) => {
     expect(ThemeSchema.safeParse(p).success).toBe(true);
   });
+
+  it.each(['HOUSE.YAML', 'themes/x.YML'])(
+    'accepts uppercase extensions %s (the pattern is case-insensitive by construction, not the /i flag)',
+    (p) => {
+      expect(ThemeSchema.safeParse(p).success).toBe(true);
+    },
+  );
   it('rejects an unknown bare name with a message naming the presets', () => {
     const result = ThemeSchema.safeParse('neon');
     expect(result.success).toBe(false);

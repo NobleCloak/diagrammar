@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, writeFileSync, mkdirSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -126,8 +126,7 @@ function main(): void {
     aliases,
   };
   writeFileSync(path.join(source.outDir, ICON_SET_INDEX_FILE), `${JSON.stringify(index)}\n`);
-  const size = statSync(path.join(source.outDir, ICON_SET_DATA_FILE)).size;
-  console.log(`${source.id}@${version}: ${names.length} icons, ${size} bytes gzipped`);
+  console.log(`${source.id}@${version}: ${names.length} icons, ${gz.byteLength} bytes gzipped`);
 }
 
 main();

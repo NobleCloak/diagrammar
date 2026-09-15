@@ -29,6 +29,21 @@ const FORBIDDEN: ReadonlyArray<[RegExp, string]> = [
 const HREF_RE = /(?<![\w.-])href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/gi;
 
 /**
+ * Collapses runs of whitespace in a root `<svg>` tag's attribute list to a
+ * single space, but only *outside* quoted attribute values — a naive
+ * `attrs.replace(/\s+/g, ' ')` would also collapse whitespace an author
+ * put inside a value on purpose (e.g. `class="a  b"` naming two classes
+ * separated by more than one space). The alternation tries the quoted-value
+ * branch first so a quoted run is passed through untouched; only whitespace
+ * matched by the bare `\s+` branch (i.e. outside any quotes) is replaced.
+ */
+function collapseAttrWhitespace(attrs: string): string {
+  return attrs.replace(/("[^"]*"|'[^']*')|\s+/g, (match: string, quoted: string | undefined) =>
+    quoted !== undefined ? quoted : ' ',
+  );
+}
+
+/**
  * Runs the forbidden-construct and href checks over `text` and throws
  * `icon_invalid` on the first violation. Called twice by `sanitizeSvg`: once
  * on the comment/XML-declaration-stripped input, and again on the final
@@ -87,7 +102,7 @@ export function sanitizeSvg(text: string, options: SanitizeOptions = {}): string
     .replace(/\swidth\s*=\s*["'][^"']*["']/i, '')
     .replace(/\sheight\s*=\s*["'][^"']*["']/i, '');
   attrs = attrs.replace(/\sxmlns\s*=\s*["']http:\/\/www\.w3\.org\/2000\/svg["']/i, '');
-  attrs = ` xmlns="http://www.w3.org/2000/svg"${attrs.replace(/\s+/g, ' ').trimEnd()}`;
+  attrs = ` xmlns="http://www.w3.org/2000/svg"${collapseAttrWhitespace(attrs).trimEnd()}`;
 
   out = `<svg${attrs}>${out.slice(rootMatch[0].length)}`;
   out = out.replace(/>\s+</g, '><').trim();

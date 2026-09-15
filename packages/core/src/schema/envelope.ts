@@ -29,9 +29,15 @@ export const LayoutEngineSchema = z.enum(LAYOUT_ENGINES);
  * message. Marking the regex check `abort: true` makes both branches
  * aborted on failure, which routes through `invalid_union` and surfaces
  * this message as `issues[0]`.
+ *
+ * The regex itself is written case-insensitively by spelling out each
+ * letter's case (`[yY][aA]?[mM][lL]`) rather than with the `i` flag:
+ * `z.toJSONSchema` emits a schema's `pattern` as the regex source with no
+ * flags, so an external JSON Schema validator applying that pattern would
+ * reject `.YAML`/`.YML` if the source relied on `i`.
  */
 export const ThemeSchema = z.union(
-  [z.enum(PRESET_NAMES), z.string().regex(/\/|\.ya?ml$/i, { abort: true })],
+  [z.enum(PRESET_NAMES), z.string().regex(/\/|\.[yY][aA]?[mM][lL]$/, { abort: true })],
   {
     error: `theme must be one of ${PRESET_NAMES.join(', ')} or a relative path to a .yaml theme file`,
   },

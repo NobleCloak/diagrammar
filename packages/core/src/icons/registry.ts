@@ -65,12 +65,21 @@ export class IconRegistry {
     return this.byId.get(id);
   }
 
-  private requireSet(id: string, ref: string): IconSet {
+  /**
+   * `ref` is the full reference as the caller wrote it (e.g. `lucide/database`
+   * or `lucide/foo` while resolving `nearest`), used to give the error a
+   * concrete example of what was being looked up. It is optional: `search`
+   * looks a set up by its bare id with no surrounding reference to quote,
+   * so passing `undefined` there drops the `in "..."` clause instead of
+   * repeating the id a second time (`unknown icon set "nope" in "nope"`).
+   */
+  private requireSet(id: string, ref?: string): IconSet {
     const set = this.byId.get(id);
     if (set === undefined) {
       const ids = [...this.byId.keys()].join(', ');
+      const location = ref !== undefined ? ` in "${ref}"` : '';
       throw new DiagrammarError(
-        `unknown icon set "${id}" in "${ref}"; registered sets: ${ids.length > 0 ? ids : '(none)'}`,
+        `unknown icon set "${id}"${location}; registered sets: ${ids.length > 0 ? ids : '(none)'}`,
         'icon_unknown',
       );
     }
@@ -94,9 +103,11 @@ export class IconRegistry {
     return { set, name: parsed.name, svg };
   }
 
+  /** An empty or whitespace-only query always returns no matches, without loading any set. */
   async search(query: string, opts: { set?: string; limit?: number } = {}): Promise<IconMatch[]> {
+    if (query.trim().length === 0) return [];
     const limit = opts.limit ?? 20;
-    const sets = opts.set !== undefined ? [this.requireSet(opts.set, opts.set)] : this.sets();
+    const sets = opts.set !== undefined ? [this.requireSet(opts.set)] : this.sets();
     const matches: IconMatch[] = [];
     for (const set of sets) {
       await set.load();

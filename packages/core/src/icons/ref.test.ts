@@ -39,9 +39,6 @@ describe('parseIconRef', () => {
     },
   );
   it('rejects a malformed .svg path with icon_invalid', () => {
-    expect(() => parseIconRef('/abs/x.svg')).toThrowError(
-      expect.objectContaining({ code: 'icon_invalid' }),
-    );
     expect(() => parseIconRef('a\\b.svg')).toThrowError(
       expect.objectContaining({ code: 'icon_invalid' }),
     );

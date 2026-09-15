@@ -86,10 +86,26 @@ describe('IconRegistry', () => {
       { set: 'lucide', name: 'server', rank: 5 },
     ]);
   });
-  it('search on an unknown set is icon_unknown', async () => {
+  it('search on an unknown set is icon_unknown, without a redundant "in ..." clause', async () => {
     await expect(registry().search('x', { set: 'nope' })).rejects.toMatchObject({
       code: 'icon_unknown',
+      message: 'unknown icon set "nope"; registered sets: lucide, brands',
     });
+  });
+  it('an empty or whitespace-only query returns no matches', async () => {
+    const r = registry();
+    expect(await r.search('')).toEqual([]);
+    expect(await r.search('   ')).toEqual([]);
+  });
+  it('a zero-icon set contributes no matches to search or nearest', async () => {
+    const r = registry();
+    r.register(memoryIconSet('empty', {}));
+    expect(await r.search('anything')).toEqual([]);
+    expect(await r.search('anything', { set: 'empty' })).toEqual([]);
+    expect(await r.nearest('empty', 'anything')).toEqual([]);
+  });
+  it('a zero limit returns no matches', async () => {
+    expect(await registry().search('data', { limit: 0 })).toEqual([]);
   });
   it('nearest falls back to prefix-of-query and edit-distance candidates when nothing matches', async () => {
     const r = registry();

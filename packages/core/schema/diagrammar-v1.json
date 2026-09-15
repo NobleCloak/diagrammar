@@ -32,7 +32,7 @@
             },
             {
               "type": "string",
-              "pattern": "\\/|\\.ya?ml$"
+              "pattern": "\\/|\\.[yY][aA]?[mM][lL]$"
             }
           ]
         },
@@ -65,7 +65,16 @@
                 "type": "string"
               },
               "icon": {
-                "type": "string"
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]*\\/[A-Za-z0-9][A-Za-z0-9._-]*$"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\.[sS][vV][gG]$"
+                  }
+                ]
               },
               "in": {
                 "type": "string"
@@ -120,7 +129,16 @@
                 "type": "string"
               },
               "icon": {
-                "type": "string"
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]*\\/[A-Za-z0-9][A-Za-z0-9._-]*$"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\.[sS][vV][gG]$"
+                  }
+                ]
               },
               "shape": {
                 "type": "string",
@@ -406,7 +424,7 @@
             },
             {
               "type": "string",
-              "pattern": "\\/|\\.ya?ml$"
+              "pattern": "\\/|\\.[yY][aA]?[mM][lL]$"
             }
           ]
         },
@@ -427,7 +445,16 @@
                 "type": "string"
               },
               "icon": {
-                "type": "string"
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]*\\/[A-Za-z0-9][A-Za-z0-9._-]*$"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\.[sS][vV][gG]$"
+                  }
+                ]
               },
               "kind": {
                 "type": "string",

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { memoryResolver } from '../assets/resolver.js';
+import { memoryResolver, type AssetResolver } from '../assets/resolver.js';
 import { parse } from '../parse.js';
+import type { GraphDiagram } from '../model/types.js';
 import { IconRegistry } from './registry.js';
 import { checkIconRefs, resolveIcons } from './resolve.js';
 import { memoryIconSet, svgDataUri } from './set.js';
@@ -91,6 +92,27 @@ describe('resolveIcons', () => {
       message: expect.stringContaining('nodes[0].icon') as string,
     });
   });
+  it('reads and sanitizes a path icon shared by several sites only once', async () => {
+    let reads = 0;
+    const inner = memoryResolver({ 'icons/x.svg': RAW });
+    const counting: AssetResolver = {
+      read(relPath) {
+        reads++;
+        return inner.read(relPath);
+      },
+    };
+    const m = await resolveIcons(
+      model(
+        'diagrammar: 1\ntype: flowchart\nnodes:\n  - { id: a, icon: ./icons/x.svg }\n  - { id: b, icon: ./icons/x.svg }\n  - { id: c, icon: ./icons/x.svg }\n',
+      ),
+      registry,
+      counting,
+    );
+    expect(reads).toBe(1);
+    expect(m.get('a')).toBe(svgDataUri(CLEAN));
+    expect(m.get('b')).toBe(svgDataUri(CLEAN));
+    expect(m.get('c')).toBe(svgDataUri(CLEAN));
+  });
 });
 
 describe('checkIconRefs', () => {
@@ -109,5 +131,15 @@ describe('checkIconRefs', () => {
     expect(issues.map((i) => i.path)).toEqual(['groups[0].icon', 'nodes[1].icon']);
     expect(issues[0]?.message).toContain('unknown icon "lucide/nope"');
     expect(issues[1]?.message).toContain('not found');
+  });
+  it('reports a malformed ref on a hand-built model as one issue, not a throw', async () => {
+    const m = model(
+      'diagrammar: 1\ntype: flowchart\nnodes:\n  - { id: a, icon: lucide/database }\n',
+    ) as GraphDiagram;
+    m.nodes[0]!.icon = 'bad ref';
+    const issues = await checkIconRefs(m, registry, undefined);
+    expect(issues).toEqual([
+      { path: 'nodes[0].icon', message: expect.stringContaining('<set>/<name>') as string },
+    ]);
   });
 });

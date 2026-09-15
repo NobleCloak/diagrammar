@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import * as core from './index.js';
 
@@ -8,6 +10,13 @@ describe('public API surface (Plan 01 portion)', () => {
     expect(typeof core.ValidationError).toBe('function');
     expect(typeof core.ConflictError).toBe('function');
     expect(typeof core.shutdown).toBe('function');
+  });
+
+  it('VERSION matches the version field in packages/core/package.json', () => {
+    const pkg = JSON.parse(
+      readFileSync(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8'),
+    ) as { version: string };
+    expect(core.VERSION).toBe(pkg.version);
   });
 
   it('shutdown resolves without throwing when no engine has been created yet', async () => {

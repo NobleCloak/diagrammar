@@ -1,4 +1,4 @@
-import type { ValidationIssue } from '../errors.js';
+import { DiagrammarError, formatValidationIssues, type ValidationIssue } from '../errors.js';
 import { loadYaml, withLine, yamlErrorsToIssues } from '../parse.js';
 import { zodErrorToIssues } from '../schema/issues.js';
 import { buildTheme } from './build.js';
@@ -6,7 +6,6 @@ import { ThemeFileSchema } from './schema.js';
 import type { ResolvedTheme } from './types.js';
 import { isPathRef } from '../assets/paths.js';
 import type { AssetResolver } from '../assets/resolver.js';
-import { DiagrammarError } from '../errors.js';
 import { PRESET_NAMES, isPresetName, presetTheme } from './presets.js';
 
 export type ThemeParseResult =
@@ -31,16 +30,6 @@ export function parseThemeFile(text: string, name: string): ThemeParseResult {
     };
   }
   return { ok: true, theme: buildTheme(parsed.data, name) };
-}
-
-function formatIssues(issues: ValidationIssue[]): string {
-  return issues
-    .map((issue) => {
-      const location = issue.line !== undefined ? ` (line ${issue.line})` : '';
-      const path = issue.path.length > 0 ? `${issue.path}: ` : '';
-      return `${path}${issue.message}${location}`;
-    })
-    .join('; ');
 }
 
 /**
@@ -69,7 +58,7 @@ export async function resolveTheme(
   const result = parseThemeFile(new TextDecoder().decode(bytes), ref);
   if (!result.ok) {
     throw new DiagrammarError(
-      `theme file "${ref}" is invalid: ${formatIssues(result.issues)}`,
+      `theme file "${ref}" is invalid: ${formatValidationIssues(result.issues)}`,
       'theme_invalid',
     );
   }

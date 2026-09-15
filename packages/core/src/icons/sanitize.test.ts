@@ -43,6 +43,14 @@ describe('sanitizeSvg normalization', () => {
       '<svg xmlns="http://www.w3.org/2000/svg" role="img" viewBox="0 0 24 24"><path d="M0 0"/></svg>',
     );
   });
+  it('collapses whitespace between root attributes but preserves whitespace inside a quoted value', () => {
+    const out = sanitizeSvg(
+      '<svg xmlns="http://www.w3.org/2000/svg"   viewBox="0 0 1 1"  class="a  b"><rect/></svg>',
+    );
+    expect(out).toBe(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1" class="a  b"><rect/></svg>',
+    );
+  });
   it('keeps text content whitespace inside elements', () => {
     expect(
       sanitizeSvg(

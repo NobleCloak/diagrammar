@@ -1,7 +1,7 @@
 import type { AssetResolver } from '../assets/resolver.js';
 import { DiagrammarError, type ValidationIssue } from '../errors.js';
 import type { Diagram } from '../model/types.js';
-import { parseIconRef } from './ref.js';
+import { parseIconRef, type IconRef } from './ref.js';
 import type { IconRegistry } from './registry.js';
 import { sanitizeSvg } from './sanitize.js';
 import { svgDataUri } from './set.js';
@@ -32,12 +32,40 @@ export function iconSites(model: Diagram): IconSite[] {
   return sites;
 }
 
-async function resolveOne(
+/**
+ * Reads and sanitizes a path-form icon exactly once per distinct `path`
+ * within one `resolveIcons`/`checkIconRefs` call, memoized in `cache`: N
+ * sites sharing e.g. `./icons/x.svg` share one `resolver.read` + sanitize.
+ * `cache` is created fresh per top-level call, so nothing leaks between
+ * diagrams. The stored promise's rejection (if any) is the unwrapped
+ * sanitizer/resolver error — each caller still wraps it with its own
+ * site's path below, so two sites sharing a bad file each get their own
+ * `nodes[i].icon`-prefixed message.
+ */
+function resolvePathForm(
+  path: string,
+  resolver: AssetResolver,
+  cache: Map<string, Promise<string>>,
+): Promise<string> {
+  let cached = cache.get(path);
+  if (cached === undefined) {
+    cached = (async () => {
+      const bytes = await resolver.read(path);
+      return svgDataUri(sanitizeSvg(new TextDecoder().decode(bytes)));
+    })();
+    cache.set(path, cached);
+  }
+  return cached;
+}
+
+/** Resolves one site's already-parsed ref to a data URI. */
+async function resolveParsed(
   site: IconSite,
+  parsed: IconRef,
   registry: IconRegistry | undefined,
   resolver: AssetResolver | undefined,
+  cache: Map<string, Promise<string>>,
 ): Promise<string> {
-  const parsed = parseIconRef(site.ref);
   if (parsed.kind === 'set') {
     if (registry === undefined) {
       throw new DiagrammarError(
@@ -54,9 +82,8 @@ async function resolveOne(
       'asset_resolver_missing',
     );
   }
-  const bytes = await resolver.read(parsed.path);
   try {
-    return svgDataUri(sanitizeSvg(new TextDecoder().decode(bytes)));
+    return await resolvePathForm(parsed.path, resolver, cache);
   } catch (error) {
     if (error instanceof DiagrammarError && error.code === 'icon_invalid') {
       throw new DiagrammarError(`${site.path}: ${error.message}`, 'icon_invalid');
@@ -75,15 +102,20 @@ export async function resolveIcons(
   resolver: AssetResolver | undefined,
 ): Promise<ResolvedIcons> {
   const out = new Map<string, string>();
+  const cache = new Map<string, Promise<string>>();
   for (const site of iconSites(model)) {
-    out.set(site.key, await resolveOne(site, registry, resolver));
+    const parsed = parseIconRef(site.ref);
+    out.set(site.key, await resolveParsed(site, parsed, registry, resolver, cache));
   }
   return out;
 }
 
 /**
  * Async existence/content check the CLI and MCP run after `validate()`
- * (spec §6.3). Without a registry, set-form refs are not checked.
+ * (spec §6.3). Without a registry, set-form refs are not checked. Each
+ * site's ref is parsed once, inside the `try`: a malformed ref on a
+ * hand-built model (bypassing `parse()`'s schema check) becomes an issue
+ * at that site's path instead of throwing out of the whole check.
  */
 export async function checkIconRefs(
   model: Diagram,
@@ -91,10 +123,12 @@ export async function checkIconRefs(
   resolver: AssetResolver | undefined,
 ): Promise<ValidationIssue[]> {
   const issues: ValidationIssue[] = [];
+  const cache = new Map<string, Promise<string>>();
   for (const site of iconSites(model)) {
-    if (registry === undefined && parseIconRef(site.ref).kind === 'set') continue;
     try {
-      await resolveOne(site, registry, resolver);
+      const parsed = parseIconRef(site.ref);
+      if (registry === undefined && parsed.kind === 'set') continue;
+      await resolveParsed(site, parsed, registry, resolver, cache);
     } catch (error) {
       if (error instanceof DiagrammarError) {
         issues.push({ path: site.path, message: error.message });

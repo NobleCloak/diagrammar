@@ -1,9 +1,23 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { walkthrough as buildWalkthrough } from './walkthrough/index.js';
 import type { WalkthroughOptions } from './walkthrough/index.js';
 import { parse as parseForWalkthrough } from './parse.js';
 import { ValidationError as WalkthroughValidationError } from './errors.js';
+import { findPackageRoot } from './engine/fonts.js';
 
-export const VERSION = '0.1.0';
+/**
+ * This package's own version, read from its `package.json` at module load
+ * so it never drifts from what Changesets bumps (unlike a hardcoded
+ * literal). `findPackageRoot` already handles the src/ vs. dist/ depth
+ * difference (see its doc comment in engine/fonts.ts).
+ */
+export const VERSION: string = (
+  JSON.parse(
+    readFileSync(join(findPackageRoot(fileURLToPath(import.meta.url)), 'package.json'), 'utf8'),
+  ) as { version: string }
+).version;
 
 export * from './errors.js';
 

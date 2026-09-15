@@ -68,8 +68,8 @@ export function compileGraph(
     lines.push(`${quoteKey(key)}: {`);
     lines.push(`  label: ${d2String(group.label)}`);
     if (group.icon !== undefined) lines.push(`  ${iconLine(icons, group.id, group.icon)}`);
-    for (const l of styleLines(mergeStyle(theme, { family: 'group' }, group.style), dim))
-      lines.push(`  ${l}`);
+    const style = mergeStyle(theme, { family: 'group' }, group.style);
+    for (const l of styleLines(style, dim)) lines.push(`  ${l}`);
     lines.push('}');
   }
   if (model.groups.length > 0) lines.push('');
@@ -81,11 +81,8 @@ export function compileGraph(
     lines.push(`  shape: ${d2ShapeFor(node.shape)}`);
     lines.push(`  label: ${d2String(node.label)}`);
     if (node.icon !== undefined) lines.push(`  ${iconLine(icons, node.id, node.icon)}`);
-    for (const l of styleLines(
-      mergeStyle(theme, { family: 'node', shape: node.shape }, node.style),
-      dim,
-    ))
-      lines.push(`  ${l}`);
+    const style = mergeStyle(theme, { family: 'node', shape: node.shape }, node.style);
+    for (const l of styleLines(style, dim)) lines.push(`  ${l}`);
     lines.push('}');
   }
   if (model.nodes.length > 0) lines.push('');
@@ -94,7 +91,8 @@ export function compileGraph(
     const from = quoteKey(absNodeKey(model, edge.from));
     const to = quoteKey(absNodeKey(model, edge.to));
     const dim = focus !== undefined && !focus.has(edge.key);
-    const extra = styleLines(mergeStyle(theme, { family: 'edge' }, edge.style), dim);
+    const style = mergeStyle(theme, { family: 'edge' }, edge.style);
+    const extra = styleLines(style, dim);
     if (extra.length === 0) {
       lines.push(
         edge.label !== undefined ? `${from} -> ${to}: ${d2String(edge.label)}` : `${from} -> ${to}`,

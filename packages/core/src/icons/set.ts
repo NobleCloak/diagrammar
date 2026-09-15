@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 import { z } from 'zod';
 import { DiagrammarError } from '../errors.js';
+import { zodErrorToIssues } from '../schema/issues.js';
 import { sanitizeSvg } from './sanitize.js';
 import type { IconLicense, IconSet } from './types.js';
 
@@ -124,8 +125,11 @@ export function openIconSetDir(dir: string): IconSet {
   }
   const index = IconSetIndexSchema.safeParse(parsed);
   if (!index.success) {
+    const detail = zodErrorToIssues(index.error, parsed)
+      .map((issue) => `${issue.path}: ${issue.message}`)
+      .join('; ');
     throw new DiagrammarError(
-      `icon set "${dir}": ${ICON_SET_INDEX_FILE} is malformed`,
+      `icon set "${dir}": ${ICON_SET_INDEX_FILE} is malformed: ${detail}`,
       'icon_set_invalid',
     );
   }
