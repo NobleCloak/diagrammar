@@ -26,11 +26,17 @@ export interface AwsImportSource {
   sha256: string;
 }
 
+export interface AwsImportRejection {
+  entry: string;
+  reason: string;
+}
+
 export interface AwsImportResult {
   index: IconSetIndex;
   icons: Record<string, string>;
   sourceMd: string;
   skipped: number;
+  rejected: AwsImportRejection[];
 }
 
 function slug(text: string): string {
@@ -52,6 +58,7 @@ export function buildAwsIconSet(
 ): AwsImportResult {
   const icons: Record<string, string> = {};
   const aliases: Record<string, string[]> = {};
+  const rejected: AwsImportRejection[] = [];
   let skipped = 0;
   const paths = Object.keys(entries).sort();
   for (const entryPath of paths) {
@@ -64,8 +71,8 @@ export function buildAwsIconSet(
     const stem = match[2] ?? '';
     const fullName = slug(stem);
     let name = serviceName(stem);
-    if (name in icons) name = fullName;
-    if (name in icons) {
+    if (Object.hasOwn(icons, name)) name = fullName;
+    if (Object.hasOwn(icons, name)) {
       throw new DiagrammarError(
         `AWS import: icon name "${name}" collides twice (from ${entryPath})`,
         'icon_set_invalid',
@@ -75,10 +82,11 @@ export function buildAwsIconSet(
     try {
       svg = sanitizeSvg(new TextDecoder().decode(entries[entryPath]));
     } catch (error) {
-      throw new DiagrammarError(
-        `AWS import: ${entryPath}: ${error instanceof Error ? error.message : String(error)}`,
-        'icon_invalid',
-      );
+      rejected.push({
+        entry: entryPath,
+        reason: error instanceof Error ? error.message : String(error),
+      });
+      continue;
     }
     icons[name] = svg;
     const aliasList = [...new Set([fullName, category])]
@@ -89,7 +97,8 @@ export function buildAwsIconSet(
   const names = Object.keys(icons).sort();
   if (names.length === 0) {
     throw new DiagrammarError(
-      'AWS import: no Arch_*/64/*.svg entries found — is this the official Asset Package zip?',
+      'AWS import: no icons survived — no Arch_*/64/*.svg entries were found, or every ' +
+        'one was rejected by the sanitizer; is this the official Asset Package zip?',
       'icon_set_invalid',
     );
   }
@@ -103,14 +112,20 @@ export function buildAwsIconSet(
     names,
     aliases,
   };
-  const sourceMd = `# Source\n\nBuilt by \`diagrammar icons import aws\` from \`${source.zipName}\` (sha256 ${source.sha256}).\n${names.length} architecture service icons (64px SVG variants); ${skipped} other entries skipped.\nTerms: ${AWS_LICENSE.url}\n`;
-  return { index, icons: sorted, sourceMd, skipped };
+  const rejectedMd =
+    rejected.length > 0
+      ? `\n${rejected.length} icon(s) rejected by the sanitizer:\n${rejected
+          .map((r) => `- ${r.entry}: ${r.reason}`)
+          .join('\n')}\n`
+      : '';
+  const sourceMd = `# Source\n\nBuilt by \`diagrammar icons import aws\` from \`${source.zipName}\` (sha256 ${source.sha256}).\n${names.length} architecture service icons (64px SVG variants); ${skipped} other entries skipped.\nTerms: ${AWS_LICENSE.url}\n${rejectedMd}`;
+  return { index, icons: sorted, sourceMd, skipped, rejected };
 }
 
 export async function importAwsZip(
   zipPath: string,
   outDir: string,
-): Promise<{ count: number; outDir: string }> {
+): Promise<{ count: number; rejected: AwsImportRejection[]; outDir: string }> {
   const bytes = await readFile(zipPath);
   const sha256 = createHash('sha256').update(bytes).digest('hex');
   const result = buildAwsIconSet(unzipSync(new Uint8Array(bytes)), {
@@ -124,5 +139,5 @@ export async function importAwsZip(
     gzipSync(Buffer.from(JSON.stringify(result.icons), 'utf8'), { level: 9 }),
   );
   await writeAtomic(join(outDir, 'SOURCE.md'), result.sourceMd);
-  return { count: result.index.names.length, outDir };
+  return { count: result.index.names.length, rejected: result.rejected, outDir };
 }

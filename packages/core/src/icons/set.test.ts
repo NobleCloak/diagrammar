@@ -86,4 +86,33 @@ describe('openIconSetDir', () => {
     const set = openIconSetDir(dir);
     await expect(set.load()).rejects.toMatchObject({ code: 'icon_set_invalid' });
   });
+
+  it('sanitizes icons lazily in get(): a bad icon throws icon_invalid, a clean sibling still resolves', async () => {
+    await writeSet({
+      evil: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9 9"><script/></svg>',
+      box: SVG,
+    });
+    const set = openIconSetDir(dir);
+    await set.load();
+    expect(() => set.get('evil')).toThrowError(expect.objectContaining({ code: 'icon_invalid' }));
+    expect(set.get('box')).toBe(SVG);
+  });
+
+  it('memoizes a sanitized icon: repeated get() calls return the same value without re-throwing', async () => {
+    await writeSet({ box: SVG });
+    const set = openIconSetDir(dir);
+    await set.load();
+    const first = set.get('box');
+    const second = set.get('box');
+    expect(first).toBe(SVG);
+    expect(second).toBe(first);
+  });
+
+  it('does not resolve prototype-chain keys as icons', async () => {
+    await writeSet({ box: SVG });
+    const set = openIconSetDir(dir);
+    await set.load();
+    expect(set.get('constructor')).toBeUndefined();
+    expect(set.aliases('constructor')).toEqual([]);
+  });
 });

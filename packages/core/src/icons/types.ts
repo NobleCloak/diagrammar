@@ -10,6 +10,11 @@ export interface IconSet {
   readonly version: string;
   readonly license: IconLicense;
   load(): Promise<void>;
+  /**
+   * Returns the sanitized SVG for `name`, or `undefined` if the set has not
+   * been loaded yet or does not own that name. Throws `icon_invalid` for an
+   * icon that fails sanitization.
+   */
   get(name: string): string | undefined;
   names(): readonly string[];
   aliases(name: string): readonly string[];

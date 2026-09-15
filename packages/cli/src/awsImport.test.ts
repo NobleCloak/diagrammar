@@ -9,6 +9,9 @@ import { buildAwsIconSet, importAwsZip } from './awsImport.js';
 const SVG = (fill: string): string =>
   `<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect width="64" height="64" fill="${fill}"/></svg>`;
 
+const STYLED_SVG =
+  '<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><defs><style>.a{fill:#f90}</style></defs><rect class="a" width="64" height="64"/></svg>';
+
 function fixtureZip(): Uint8Array {
   return zipSync({
     'Asset-Package_01312026/Architecture-Service-Icons_01312026/Arch_Compute/64/Arch_AWS-Lambda_64.svg':
@@ -23,6 +26,8 @@ function fixtureZip(): Uint8Array {
       strToU8(SVG('#3f8624')),
     'Asset-Package_01312026/Architecture-Service-Icons_01312026/Arch_Analytics/64/Arch_Amazon-Backup_64.svg':
       strToU8(SVG('#8c4fff')),
+    'Asset-Package_01312026/Architecture-Service-Icons_01312026/Arch_Compute/64/Arch_AWS-Styled_64.svg':
+      strToU8(STYLED_SVG),
     'Asset-Package_01312026/Resource-Icons_01312026/Res_Compute/Res_48_Light/Res_AWS-Lambda_Lambda-Function_48_Light.svg':
       strToU8(SVG('#000')),
   });
@@ -56,8 +61,16 @@ describe('buildAwsIconSet', () => {
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#f90"/></svg>',
     );
     expect(result.skipped).toBe(3);
+    expect(result.rejected).toEqual([
+      {
+        entry:
+          'Asset-Package_01312026/Architecture-Service-Icons_01312026/Arch_Compute/64/Arch_AWS-Styled_64.svg',
+        reason: expect.stringContaining('<style>') as string,
+      },
+    ]);
     expect(result.sourceMd).toContain('Asset-Package_01312026.zip');
     expect(result.sourceMd).toContain('abc');
+    expect(result.sourceMd).toContain('Arch_AWS-Styled_64.svg');
   });
   it('fails with icon_set_invalid when no architecture icons are found', () => {
     expect(() =>

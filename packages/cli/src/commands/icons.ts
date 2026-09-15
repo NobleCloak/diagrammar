@@ -23,7 +23,7 @@ export function iconDirsFrom(values: { icons?: string[] | undefined }): string[]
   return values.icons ?? [];
 }
 
-async function runSets(rest: string[]): Promise<number> {
+function runSets(rest: string[]): number {
   const { values } = parseArgs({
     args: rest,
     options: {
@@ -33,12 +33,14 @@ async function runSets(rest: string[]): Promise<number> {
     allowPositionals: false,
   });
   const registry = registryWithDirs(iconDirsFrom(values));
-  const rows = await Promise.all(
-    registry.sets().map(async (set) => {
-      await set.load();
-      return { id: set.id, version: set.version, license: set.license, count: set.names().length };
-    }),
-  );
+  // Names come from the index (already loaded synchronously when the set was
+  // opened), so listing sets never needs to gunzip icons.json.gz.
+  const rows = registry.sets().map((set) => ({
+    id: set.id,
+    version: set.version,
+    license: set.license,
+    count: set.names().length,
+  }));
   if (values.json === true) {
     console.log(JSON.stringify(rows, null, 2));
     return 0;
@@ -105,6 +107,10 @@ async function runImport(rest: string[]): Promise<number> {
     console.log(
       `wrote ${result.count} icons to ${result.outDir} (register with --icons ${result.outDir}, reference as aws/<name>)`,
     );
+    if (result.rejected.length > 0) {
+      console.error(`skipped ${result.rejected.length} icons rejected by the sanitizer:`);
+      for (const r of result.rejected) console.error(`  ${r.entry}: ${r.reason}`);
+    }
     return 0;
   } catch (err) {
     console.error(`icons import aws: ${describeIoError(err, zipPath)}`);
@@ -115,7 +121,7 @@ async function runImport(rest: string[]): Promise<number> {
 export async function run(argv: string[]): Promise<number> {
   const [sub, ...rest] = argv;
   try {
-    if (sub === 'sets') return await runSets(rest);
+    if (sub === 'sets') return runSets(rest);
     if (sub === 'search') return await runSearch(rest);
     if (sub === 'import') return await runImport(rest);
   } catch (err) {

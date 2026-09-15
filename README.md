@@ -161,8 +161,8 @@ hosting behind a load balancer (v1 ships no authentication for that mode). Under
 (there is no filesystem root for them to operate on); of the remaining six,
 `diagrammar_describe`, `diagrammar_validate`, `diagrammar_edit`, and
 `diagrammar_render` work purely against inline `source` text, while
-`diagrammar_schema` and `diagrammar_icons` never depend on the filesystem
-either way.
+`diagrammar_schema` and `diagrammar_icons` take no `path` or `source`
+argument and never touch the server root.
 
 TypeScript consumers building an MCP client under `exactOptionalPropertyTypes`
 will need a one-line `as Transport` bridge when passing a

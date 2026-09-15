@@ -305,4 +305,23 @@ describe('diagrammar_render', () => {
     expect(payload.message).toContain('database');
     await client.close();
   }, 30000);
+
+  it('under --no-fs a path-form icon fails with asset_fs_disabled, not a crash', async () => {
+    const client = await connectedClient({
+      root: undefined,
+      noFs: true,
+      icons: defaultIconRegistry(),
+    });
+    const result = await client.callTool({
+      name: 'diagrammar_render',
+      arguments: {
+        source: 'diagrammar: 1\ntype: flowchart\nnodes:\n  - { id: a, icon: ./icons/x.svg }\n',
+        format: 'svg',
+      },
+    });
+    expect(result.isError).toBe(true);
+    const content = result.content as { type: string; text: string }[];
+    expect(JSON.parse(content[0]!.text)).toMatchObject({ code: 'asset_fs_disabled' });
+    await client.close();
+  }, 30000);
 });

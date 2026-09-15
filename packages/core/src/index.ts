@@ -55,10 +55,8 @@ export {
   openIconSetDir,
   svgDataUri,
   IconRegistry,
-  rankMatches,
   resolveIcons,
   checkIconRefs,
-  iconSites,
 } from './icons/index.js';
 export type {
   IconRef,

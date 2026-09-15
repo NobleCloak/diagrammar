@@ -29,6 +29,30 @@ const FORBIDDEN: ReadonlyArray<[RegExp, string]> = [
 const HREF_RE = /(?<![\w.-])href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/gi;
 
 /**
+ * Runs the forbidden-construct and href checks over `text` and throws
+ * `icon_invalid` on the first violation. Called twice by `sanitizeSvg`: once
+ * on the comment/XML-declaration-stripped input, and again on the final
+ * reconstructed string (after the root `<svg>` tag's attributes are
+ * rewritten and inter-tag whitespace is collapsed). No known input differs
+ * between the two passes — the root-tag rewrite only touches
+ * `xmlns`/`width`/`height`/`viewBox`, none of which the checks below key
+ * off, and whitespace collapse only removes runs matching `>\s+<`, which
+ * cannot join two tokens into a new forbidden construct (e.g. it cannot
+ * turn `a="on" load=` into `onload=`, since that spans an attribute value,
+ * not `>...<`). The second pass is defense in depth against a future change
+ * to the reconstruction step reintroducing something the first pass cleared.
+ */
+function check(text: string): void {
+  for (const [pattern, reason] of FORBIDDEN) {
+    if (pattern.test(text)) reject(reason);
+  }
+  for (const match of text.matchAll(HREF_RE)) {
+    const value = match[1] ?? match[2] ?? match[3] ?? '';
+    if (!value.startsWith('#')) reject(`external reference "${value}" is not allowed`);
+  }
+}
+
+/**
  * The security boundary for icons (spec §5.3): applied at set build time and
  * to every local `.svg` at load. Pure; string-based (icons are small and the
  * forbidden constructs are lexical), never touches the filesystem.
@@ -44,14 +68,7 @@ export function sanitizeSvg(text: string, options: SanitizeOptions = {}): string
     .trim();
 
   // Check forbidden patterns and href references against the stripped text.
-  for (const [pattern, reason] of FORBIDDEN) {
-    if (pattern.test(out)) reject(reason);
-  }
-  for (const match of out.matchAll(HREF_RE)) {
-    // One of groups 1, 2, 3 will match depending on quote style or unquoted
-    const value = match[1] ?? match[2] ?? match[3] ?? '';
-    if (!value.startsWith('#')) reject(`external reference "${value}" is not allowed`);
-  }
+  check(out);
   const rootMatch = /^<svg\b([^>]*)>/i.exec(out);
   if (rootMatch === null) reject('root element is not <svg>');
   let attrs = rootMatch[1] ?? '';
@@ -75,6 +92,10 @@ export function sanitizeSvg(text: string, options: SanitizeOptions = {}): string
   out = `<svg${attrs}>${out.slice(rootMatch[0].length)}`;
   out = out.replace(/>\s+</g, '><').trim();
   out = out.replace(/<\/svg>\s*$/i, '</svg>');
+
+  // Re-check the final, reconstructed string (see the doc comment on `check`
+  // above for why no known input distinguishes this pass from the first).
+  check(out);
 
   const bytes = Buffer.byteLength(out, 'utf8');
   if (bytes > maxBytes) reject(`${bytes} bytes exceeds the ${maxBytes}-byte cap`);

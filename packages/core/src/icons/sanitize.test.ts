@@ -140,4 +140,11 @@ describe('sanitizeSvg rejections (icon_invalid)', () => {
       expect.objectContaining({ code: 'icon_invalid' }),
     );
   });
+  it('rejects an event-handler attribute on the root <svg> tag itself, proving the checks run on the final reconstructed string, not just the pre-rewrite one', () => {
+    expect(() =>
+      sanitizeSvg(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9 9" onload="x()"><rect/></svg>',
+      ),
+    ).toThrowError(expect.objectContaining({ code: 'icon_invalid' }));
+  });
 });

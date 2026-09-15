@@ -66,6 +66,13 @@ describe('IconRegistry', () => {
   it('rejects a path form passed to resolve', async () => {
     await expect(registry().resolve('./x.svg')).rejects.toMatchObject({ code: 'icon_invalid' });
   });
+  it('does not resolve a prototype-chain key as an icon', async () => {
+    await expect(registry().resolve('lucide/constructor')).rejects.toMatchObject({
+      code: 'icon_unknown',
+    });
+    await expect(registry().nearest('lucide', 'constructor')).resolves.toEqual([]);
+    await expect(registry().search('constructor')).resolves.toEqual([]);
+  });
   it('searches across sets, ranked then by set id then name, with a limit', async () => {
     const r = registry();
     expect(await r.search('data')).toEqual([

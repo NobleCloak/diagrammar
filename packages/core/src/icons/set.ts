@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 import { z } from 'zod';
 import { DiagrammarError } from '../errors.js';
+import { sanitizeSvg } from './sanitize.js';
 import type { IconLicense, IconSet } from './types.js';
 
 export const ICON_SET_INDEX_FILE = 'index.json';
@@ -43,6 +44,7 @@ class JsonIconSet implements IconSet {
   private readonly aliasMap: Record<string, string[]>;
   private icons: Record<string, string> | undefined;
   private loading: Promise<void> | undefined;
+  private readonly sanitized = new Map<string, string>();
 
   constructor(
     index: IconSetIndex,
@@ -67,8 +69,24 @@ class JsonIconSet implements IconSet {
     return this.loading;
   }
 
+  /**
+   * Returns the sanitized SVG for `name`, or `undefined` before `load()` or
+   * for a name the set does not own. Sanitizes lazily on first access per
+   * name (spec §5.3 applies to every set, bundled or directory-backed) and
+   * memoizes the result, so a set built from untrusted `icons.json.gz`
+   * content is only ever handed out clean.
+   *
+   * @throws {DiagrammarError} with code `icon_invalid` if the icon fails
+   * sanitization; the error is not memoized, so a fixed set directory can be
+   * reloaded without restarting the process.
+   */
   get(name: string): string | undefined {
-    return this.icons?.[name];
+    const cached = this.sanitized.get(name);
+    if (cached !== undefined) return cached;
+    if (this.icons === undefined || !Object.hasOwn(this.icons, name)) return undefined;
+    const clean = sanitizeSvg(this.icons[name] ?? '');
+    this.sanitized.set(name, clean);
+    return clean;
   }
 
   names(): readonly string[] {
@@ -76,7 +94,7 @@ class JsonIconSet implements IconSet {
   }
 
   aliases(name: string): readonly string[] {
-    return this.aliasMap[name] ?? [];
+    return Object.hasOwn(this.aliasMap, name) ? (this.aliasMap[name] ?? []) : [];
   }
 }
 

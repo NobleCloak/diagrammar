@@ -190,6 +190,7 @@ describe('render with a themed sequence diagram', () => {
 
 import { IconRegistry } from './icons/registry.js';
 import { memoryIconSet } from './icons/set.js';
+import { ICON_MAX_BYTES } from './icons/sanitize.js';
 
 const ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="4" fill="#FF9900"/></svg>';
@@ -240,5 +241,22 @@ describe('render with icons (real D2/resvg)', () => {
     const a = await render(yaml, { format: 'png', icons });
     const b = await render(yaml, { format: 'png', icons });
     expect(Buffer.from(a.bytes).equals(Buffer.from(b.bytes))).toBe(true);
+  }, 30000);
+
+  it('renders an icon just under the 256 KB sanitize cap', async () => {
+    const prefix = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="';
+    const suffix = '"/></svg>';
+    const segment = 'M0 0 L1 1 ';
+    const target = ICON_MAX_BYTES - 512;
+    const repeats = Math.floor((target - prefix.length - suffix.length) / segment.length);
+    const bigSvg = `${prefix}${segment.repeat(repeats)}${suffix}`;
+    expect(Buffer.byteLength(bigSvg, 'utf8')).toBeLessThan(ICON_MAX_BYTES);
+    const bigIcons = new IconRegistry();
+    bigIcons.register(memoryIconSet('big', { blob: bigSvg }));
+    const result = await render(
+      'diagrammar: 1\ntype: flowchart\nnodes:\n  - { id: a, shape: image, icon: big/blob }\n',
+      { format: 'svg', icons: bigIcons },
+    );
+    expect((result.svg.match(/<image\b/g) ?? []).length).toBe(1);
   }, 30000);
 });

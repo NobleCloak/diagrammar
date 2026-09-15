@@ -33,17 +33,14 @@ export function register(server: McpServer, ctx: ToolContext): void {
     (args) =>
       withToolErrors(async () => {
         if (args.query === undefined) {
-          const sets = await Promise.all(
-            ctx.icons.sets().map(async (set) => {
-              await set.load();
-              return {
-                id: set.id,
-                version: set.version,
-                license: set.license,
-                count: set.names().length,
-              };
-            }),
-          );
+          // Names come from the index (already loaded synchronously when the
+          // set was opened), so listing sets never needs to gunzip icons.json.gz.
+          const sets = ctx.icons.sets().map((set) => ({
+            id: set.id,
+            version: set.version,
+            license: set.license,
+            count: set.names().length,
+          }));
           return { content: [{ type: 'text' as const, text: JSON.stringify({ sets }, null, 2) }] };
         }
         const matches = await ctx.icons.search(args.query, {
