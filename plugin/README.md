@@ -10,7 +10,7 @@ themes and icon sets — through the Diagrammar MCP server.
 - **MCP server `diagrammar`** — eight tools (`diagrammar_list`, `diagrammar_describe`,
   `diagrammar_validate`, `diagrammar_create`, `diagrammar_edit`, `diagrammar_render`,
   `diagrammar_schema`, `diagrammar_icons`) and three resources, spawned on demand
-  over stdio with `npx -y @noblecloak/diagrammar@^0.2 mcp --stdio`.
+  over stdio with `npx -y @noblecloak/diagrammar@^0.3 mcp --stdio`.
 
 ## Install
 
