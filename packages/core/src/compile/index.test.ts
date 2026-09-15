@@ -6,6 +6,8 @@ import { compile, createKeyMap, d2KeyFor, modelKeyFor, modelKeyForConnection } f
 import { compileAndRender } from '../engine/index.js';
 import type { Diagram, GraphDiagram, SequenceDiagram } from '../model/types.js';
 import type { LaidOutConnection } from '../engine/types.js';
+import { buildTheme, presetTheme, resolveTheme } from '../theme/index.js';
+import { svgDataUri } from '../icons/set.js';
 
 function fixture(name: string, ext: 'yaml' | 'd2'): string {
   return readFileSync(
@@ -97,7 +99,10 @@ describe('compile', () => {
       views: [],
     };
     const { d2 } = compile(model);
-    const { laidOut } = await compileAndRender(d2, { layout: model.layout, theme: model.theme });
+    const { laidOut } = await compileAndRender(d2, {
+      layout: model.layout,
+      themeId: (await resolveTheme(model.theme, undefined)).d2ThemeId,
+    });
     const ids = laidOut.shapes.map((s) => s.id);
     expect(ids).toEqual(expect.arrayContaining(['link', 'icon', 'label', 'style']));
   }, 30000);
@@ -136,7 +141,7 @@ describe('createKeyMap', () => {
     const { d2: rootD2 } = compile(model);
     const { laidOut: rootLaidOut } = await compileAndRender(rootD2, {
       layout: model.layout,
-      theme: model.theme,
+      themeId: (await resolveTheme(model.theme, undefined)).d2ThemeId,
     });
     const rootKeyMap = createKeyMap(model, rootLaidOut);
     const rootKeys = rootLaidOut.connections.map((c) => rootKeyMap.connectionKey(c));
@@ -144,7 +149,7 @@ describe('createKeyMap', () => {
     const { d2: viewD2 } = compile(model, 'happy');
     const { laidOut: viewLaidOut } = await compileAndRender(viewD2, {
       layout: model.layout,
-      theme: model.theme,
+      themeId: (await resolveTheme(model.theme, undefined)).d2ThemeId,
     });
     const viewKeyMap = createKeyMap(model, viewLaidOut);
     const viewKeys = viewLaidOut.connections.map((c) => viewKeyMap.connectionKey(c));
@@ -156,7 +161,10 @@ describe('createKeyMap', () => {
   it('shapeKey resolves real shapes to their model keys', async () => {
     const model = loadDiagram('architecture-nested') as GraphDiagram;
     const { d2 } = compile(model);
-    const { laidOut } = await compileAndRender(d2, { layout: model.layout, theme: model.theme });
+    const { laidOut } = await compileAndRender(d2, {
+      layout: model.layout,
+      themeId: (await resolveTheme(model.theme, undefined)).d2ThemeId,
+    });
     const keyMap = createKeyMap(model, laidOut);
     expect(keyMap.shapeKey('warehouse.fulfilment.db')).toBe('db');
     expect(keyMap.shapeKey('gateway')).toBe('gateway');
@@ -170,14 +178,14 @@ describe('modelKeyForConnection', () => {
     const { d2: d2a } = compile(model);
     const { laidOut: laidOutA } = await compileAndRender(d2a, {
       layout: model.layout,
-      theme: model.theme,
+      themeId: (await resolveTheme(model.theme, undefined)).d2ThemeId,
     });
     for (const conn of laidOutA.connections) modelKeyForConnection(model, conn);
 
     const { d2: d2b } = compile(model);
     const { laidOut: laidOutB } = await compileAndRender(d2b, {
       layout: model.layout,
-      theme: model.theme,
+      themeId: (await resolveTheme(model.theme, undefined)).d2ThemeId,
     });
     const keys = laidOutB.connections.map((conn) => modelKeyForConnection(model, conn));
     expect(keys).toEqual(['start->check', 'yes']);
@@ -261,5 +269,109 @@ describe('modelKeyForConnection', () => {
     expect(modelKeyForConnection(model, connTwo)).toBe('second');
     expect(modelKeyForConnection(model, connOne)).toBe('first');
     expect(modelKeyForConnection(model, connTwo)).toBe('second');
+  });
+});
+
+const THEME = buildTheme(
+  {
+    'diagrammar-theme': 1,
+    base: 'light',
+    palette: { background: '#fafafa', text: '#101010', edge: '#333333' },
+    defaults: {
+      shapes: { cylinder: { fill: '#e8f5e9' } },
+      messages: { return: { fontColor: '#777' } },
+    },
+  },
+  './house.yaml',
+);
+
+describe('compile with a theme', () => {
+  const graphYaml =
+    'diagrammar: 1\ntype: architecture\nnodes:\n  - { id: db, shape: cylinder }\n  - { id: api, style: { fill: "#own" } }\nedges:\n  - { from: api, to: db }\n';
+  const seqYaml =
+    'diagrammar: 1\ntype: sequence\nparticipants:\n  - { id: a }\n  - { id: b }\nmessages:\n  - { from: a, to: b, style: return }\n';
+
+  it('is byte-identical to no theme when given a preset', () => {
+    const p = parse(graphYaml);
+    if (!p.ok) throw new Error('fixture');
+    expect(compile(p.diagram, undefined, presetTheme('light')).d2).toBe(compile(p.diagram).d2);
+  });
+
+  it('emits theme-overrides inside d2-config for a graph and applies per-shape defaults', () => {
+    const p = parse(graphYaml);
+    if (!p.ok) throw new Error('fixture');
+    const { d2 } = compile(p.diagram, undefined, THEME);
+    expect(d2).toContain(
+      'vars: {\n  d2-config: {\n    layout-engine: tala\n    theme-overrides: {\n      N1: "#101010"\n      N2: "#101010"\n      N7: "#fafafa"\n    }\n  }\n}',
+    );
+    expect(d2).toContain('"db": {\n  shape: cylinder\n  label: "db"\n  style.fill: "#e8f5e9"\n}');
+    expect(d2).toContain('"api": {\n  shape: rectangle\n  label: "api"\n  style.fill: "#own"\n}');
+    expect(d2).toContain('"api" -> "db": {\n  style.stroke: "#333333"\n}');
+  });
+
+  it('emits a vars block before seq for a sequence diagram and themes messages', () => {
+    const p = parse(seqYaml);
+    if (!p.ok) throw new Error('fixture');
+    const { d2 } = compile(p.diagram, undefined, THEME);
+    expect(
+      d2.startsWith('vars: {\n  d2-config: {\n    theme-overrides: {\n      N1: "#101010"'),
+    ).toBe(true);
+    expect(d2).toContain(
+      '  "a" -> "b": {\n    style.stroke: "#333333"\n    style.stroke-dash: 3\n    style.font-color: "#777"\n    target-arrowhead: {\n      shape: arrow\n    }\n  }',
+    );
+  });
+
+  it('keeps view dimming last, after the arrowhead block, for a themed dimmed return message', () => {
+    const p = parse(seqYaml + 'views:\n  - { id: v, focus: [a] }\n');
+    if (!p.ok) throw new Error('fixture');
+    const { d2 } = compile(p.diagram, 'v', THEME);
+    expect(d2).toContain(
+      '    target-arrowhead: {\n      shape: arrow\n    }\n    style.opacity: 0.25\n  }',
+    );
+  });
+});
+
+const ICON_URI = svgDataUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"/>');
+
+describe('compile with icons (spec §3.4)', () => {
+  const graphYaml =
+    'diagrammar: 1\ntype: architecture\ngroups:\n  - { id: g, icon: lucide/cloud }\nnodes:\n  - { id: fn, shape: image, icon: lucide/zap, in: g }\n  - { id: db, shape: cylinder, icon: lucide/database }\n';
+  it('emits a quoted icon line after the label for groups and nodes, and shape: image', () => {
+    const p = parse(graphYaml);
+    if (!p.ok) throw new Error('fixture');
+    const icons = new Map([
+      ['g', ICON_URI],
+      ['fn', ICON_URI],
+      ['db', ICON_URI],
+    ]);
+    const { d2 } = compile(p.diagram, undefined, undefined, icons);
+    expect(d2).toContain(`"g": {\n  label: "g"\n  icon: "${ICON_URI}"\n}`);
+    expect(d2).toContain(`"g"."fn": {\n  shape: image\n  label: "fn"\n  icon: "${ICON_URI}"\n}`);
+    expect(d2).toContain(`"db": {\n  shape: cylinder\n  label: "db"\n  icon: "${ICON_URI}"\n}`);
+  });
+  it('emits participant icons inside seq', () => {
+    const p = parse(
+      'diagrammar: 1\ntype: sequence\nparticipants:\n  - { id: u, kind: actor, icon: lucide/user }\n',
+    );
+    if (!p.ok) throw new Error('fixture');
+    const { d2 } = compile(p.diagram, undefined, undefined, new Map([['u', ICON_URI]]));
+    expect(d2).toContain(
+      `  "u": {\n    shape: person\n    label: "u"\n    icon: "${ICON_URI}"\n  }`,
+    );
+  });
+  it('throws icon_unresolved when an element with an icon has no resolved entry', () => {
+    const p = parse(graphYaml);
+    if (!p.ok) throw new Error('fixture');
+    expect(() => compile(p.diagram, undefined, undefined, new Map())).toThrowError(
+      expect.objectContaining({ code: 'icon_unresolved' }),
+    );
+    expect(() => compile(p.diagram)).toThrowError(
+      expect.objectContaining({ code: 'icon_unresolved' }),
+    );
+  });
+  it('is byte-identical to before for a diagram without icons, whatever the icons argument', () => {
+    const p = parse('diagrammar: 1\ntype: flowchart\nnodes:\n  - { id: a }\n');
+    if (!p.ok) throw new Error('fixture');
+    expect(compile(p.diagram, undefined, undefined, new Map()).d2).toBe(compile(p.diagram).d2);
   });
 });

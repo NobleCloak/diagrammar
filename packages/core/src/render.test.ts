@@ -4,6 +4,10 @@ import { fileURLToPath } from 'node:url';
 import { render } from './render.js';
 import { parse } from './parse.js';
 import { compile } from './compile/index.js';
+import { memoryResolver } from './assets/resolver.js';
+import { IconRegistry } from './icons/registry.js';
+import { memoryIconSet } from './icons/set.js';
+import { ICON_MAX_BYTES } from './icons/sanitize.js';
 
 const fixture = readFileSync(
   fileURLToPath(new URL('../test/fixtures/compile/flowchart-view.yaml', import.meta.url)),
@@ -87,5 +91,171 @@ describe('render (integration, real D2/resvg WASM)', () => {
   it('does not render a text element reading the literal "seq" for a sequence diagram\'s root container (X)', async () => {
     const result = await render(sequenceFixture, { format: 'svg' });
     expect(result.svg).not.toContain('>seq<');
+  }, 30000);
+});
+
+const HOUSE =
+  'diagrammar-theme: 1\nbase: light\npalette:\n  background: "#123456"\n  fill: "#abcdef"\n';
+const DARK_HOUSE = 'diagrammar-theme: 1\nbase: dark\npalette:\n  background: "#0b0b0b"\n';
+
+describe('render with themes', () => {
+  it('fails with asset_resolver_missing when a theme path is used without a resolver', async () => {
+    await expect(
+      render(fixture, { format: 'svg', theme: './themes/house.yaml' }),
+    ).rejects.toMatchObject({
+      code: 'asset_resolver_missing',
+    });
+  }, 30000);
+
+  it('applies a theme file through the resolver: palette colours reach the SVG', async () => {
+    const resolver = memoryResolver({ 'themes/house.yaml': HOUSE });
+    const result = await render(fixture, { format: 'svg', theme: './themes/house.yaml', resolver });
+    expect(result.svg).toContain('#123456');
+    expect(result.svg).toContain('#abcdef');
+  }, 30000);
+
+  it('a dark-based theme file uses the dark D2 theme and the overridden background', async () => {
+    const resolver = memoryResolver({ 'themes/dark.yaml': DARK_HOUSE });
+    const result = await render(fixture, { format: 'svg', theme: './themes/dark.yaml', resolver });
+    expect(result.svg).toContain('#0b0b0b');
+    expect(result.svg).not.toContain('#1E1E2E'); // D2 dark background replaced by the palette
+    expect(result.svg).toContain('#CDD6F4'); // D2 dark-theme text colour still present
+  }, 30000);
+
+  it('opts.theme accepts any preset and changes the output', async () => {
+    const light = await render(fixture, { format: 'svg' });
+    const cb = await render(fixture, { format: 'svg', theme: 'colorblind' });
+    expect(cb.svg).not.toBe(light.svg);
+  }, 30000);
+
+  it('rejects an unknown preset with theme_invalid', async () => {
+    await expect(render(fixture, { format: 'svg', theme: 'neon' })).rejects.toMatchObject({
+      code: 'theme_invalid',
+    });
+  }, 30000);
+
+  it('is deterministic with a theme file', async () => {
+    const resolver = memoryResolver({ 'themes/house.yaml': HOUSE });
+    const a = await render(fixture, { format: 'png', theme: './themes/house.yaml', resolver });
+    const b = await render(fixture, { format: 'png', theme: './themes/house.yaml', resolver });
+    expect(Buffer.from(a.bytes).equals(Buffer.from(b.bytes))).toBe(true);
+  }, 30000);
+});
+
+const THEMED = `diagrammar: 1
+type: flowchart
+theme: ./themes/house.yaml
+nodes:
+  - { id: a }
+  - { id: b }
+edges:
+  - { from: a, to: b }
+`;
+
+describe('render with an in-file theme path', () => {
+  it('fails with asset_resolver_missing when no resolver is supplied', async () => {
+    await expect(render(THEMED, { format: 'svg' })).rejects.toMatchObject({
+      code: 'asset_resolver_missing',
+    });
+  }, 30000);
+
+  it('resolves the file’s own theme: path through the resolver', async () => {
+    const resolver = memoryResolver({ 'themes/house.yaml': HOUSE });
+    const result = await render(THEMED, { format: 'svg', resolver });
+    expect(result.svg).toContain('#123456');
+  }, 30000);
+
+  it('opts.theme wins over the file’s theme:', async () => {
+    const resolver = memoryResolver({ 'themes/house.yaml': HOUSE });
+    const result = await render(THEMED, { format: 'svg', resolver, theme: 'mono' });
+    expect(result.svg).not.toContain('#123456');
+  }, 30000);
+});
+
+const SEQ_THEME =
+  'diagrammar-theme: 1\nbase: light\npalette:\n  background: "#f0f0f0"\n  text: "#111111"\n  edge: "#2266aa"\ndefaults:\n  kinds:\n    database:\n      fill: "#33cc99"\n';
+
+describe('render with a themed sequence diagram', () => {
+  it('applies theme-overrides vars and a participant kind default to a rendered sequence SVG', async () => {
+    const resolver = memoryResolver({ 'themes/seq.yaml': SEQ_THEME });
+    const result = await render(sequenceFixture, {
+      format: 'svg',
+      theme: './themes/seq.yaml',
+      resolver,
+    });
+    expect(result.format).toBe('svg');
+    expect(result.svg).toContain('#f0f0f0');
+    expect(result.svg).toContain('#111111');
+    expect(result.svg).toContain('#2266aa');
+    expect(result.svg).toContain('#33cc99');
+  }, 30000);
+});
+
+const ICON_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="4" fill="#FF9900"/></svg>';
+const icons = new IconRegistry();
+icons.register(memoryIconSet('lucide', { database: ICON_SVG, zap: ICON_SVG, cloud: ICON_SVG }));
+
+describe('render with icons (real D2/resvg)', () => {
+  it('draws an inline <image> for a node icon, an image-shaped node, a group icon and a participant icon', async () => {
+    const graph = await render(
+      'diagrammar: 1\ntype: architecture\ngroups:\n  - { id: g, label: Edge, icon: lucide/cloud }\nnodes:\n  - { id: fn, label: Lambda, shape: image, icon: lucide/zap, in: g }\n  - { id: db, label: DB, shape: cylinder, icon: lucide/database }\nedges:\n  - { from: fn, to: db }\n',
+      { format: 'svg', icons },
+    );
+    expect((graph.svg.match(/<image\b/g) ?? []).length).toBe(3);
+    expect(graph.svg).toContain('data:image/svg+xml;base64,');
+    const seq = await render(
+      'diagrammar: 1\ntype: sequence\nparticipants:\n  - { id: u, kind: actor, icon: lucide/database }\n  - { id: s }\nmessages:\n  - { from: u, to: s, label: hi }\n',
+      { format: 'svg', icons },
+    );
+    expect((seq.svg.match(/<image\b/g) ?? []).length).toBe(1);
+  }, 30000);
+
+  it('reads a local .svg icon through the resolver and rasterizes to PNG', async () => {
+    const resolver = memoryResolver({ 'icons/custom.svg': ICON_SVG });
+    const result = await render(
+      'diagrammar: 1\ntype: flowchart\nnodes:\n  - { id: a, icon: ./icons/custom.svg }\n',
+      { format: 'png', resolver },
+    );
+    expect(Array.from(result.bytes.slice(0, 8))).toEqual([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+    ]);
+  }, 30000);
+
+  it('fails before the engine with icon_unknown for an unknown icon name, naming a nearest match', async () => {
+    await expect(
+      render('diagrammar: 1\ntype: flowchart\nnodes:\n  - { id: a, icon: lucide/databse }\n', {
+        format: 'svg',
+        icons,
+      }),
+    ).rejects.toMatchObject({
+      code: 'icon_unknown',
+      message: expect.stringContaining('database') as string,
+    });
+  }, 30000);
+
+  it('is deterministic with icons', async () => {
+    const yaml =
+      'diagrammar: 1\ntype: flowchart\nnodes:\n  - { id: a, shape: image, icon: lucide/zap }\n';
+    const a = await render(yaml, { format: 'png', icons });
+    const b = await render(yaml, { format: 'png', icons });
+    expect(Buffer.from(a.bytes).equals(Buffer.from(b.bytes))).toBe(true);
+  }, 30000);
+
+  it('renders an icon just under the 256 KB sanitize cap', async () => {
+    const prefix = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="';
+    const suffix = '"/></svg>';
+    const segment = 'M0 0 L1 1 ';
+    const target = ICON_MAX_BYTES - 512;
+    const repeats = Math.floor((target - prefix.length - suffix.length) / segment.length);
+    const bigSvg = `${prefix}${segment.repeat(repeats)}${suffix}`;
+    expect(Buffer.byteLength(bigSvg, 'utf8')).toBeLessThan(ICON_MAX_BYTES);
+    const bigIcons = new IconRegistry();
+    bigIcons.register(memoryIconSet('big', { blob: bigSvg }));
+    const result = await render(
+      'diagrammar: 1\ntype: flowchart\nnodes:\n  - { id: a, shape: image, icon: big/blob }\n',
+      { format: 'svg', icons: bigIcons },
+    );
+    expect((result.svg.match(/<image\b/g) ?? []).length).toBe(1);
   }, 30000);
 });

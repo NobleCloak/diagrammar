@@ -6,6 +6,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { register } from './describe.js';
+import { defaultIconRegistry } from '../icons.js';
 import type { ToolContext } from '../fs.js';
 
 const FLOWCHART =
@@ -23,7 +24,11 @@ async function connectedClient(ctx: ToolContext): Promise<Client> {
 
 vDescribe('diagrammar_describe', () => {
   it('describes inline source, omitting raw source by default', async () => {
-    const client = await connectedClient({ root: undefined, noFs: true });
+    const client = await connectedClient({
+      root: undefined,
+      noFs: true,
+      icons: defaultIconRegistry(),
+    });
     const result = await client.callTool({
       name: 'diagrammar_describe',
       arguments: { source: FLOWCHART },
@@ -40,7 +45,11 @@ vDescribe('diagrammar_describe', () => {
   });
 
   it('includes raw source when includeSource is true', async () => {
-    const client = await connectedClient({ root: undefined, noFs: true });
+    const client = await connectedClient({
+      root: undefined,
+      noFs: true,
+      icons: defaultIconRegistry(),
+    });
     const result = await client.callTool({
       name: 'diagrammar_describe',
       arguments: { source: FLOWCHART, includeSource: true },
@@ -57,7 +66,11 @@ vDescribe('diagrammar_describe', () => {
     // the registered schema at all (see the no-fs schema tests below), so
     // sending it alongside "source" would just have it silently dropped
     // rather than exercise this XOR check.
-    const client = await connectedClient({ root: process.cwd(), noFs: false });
+    const client = await connectedClient({
+      root: process.cwd(),
+      noFs: false,
+      icons: defaultIconRegistry(),
+    });
     const result = await client.callTool({
       name: 'diagrammar_describe',
       arguments: { source: FLOWCHART, path: 'x.yaml' },
@@ -67,7 +80,11 @@ vDescribe('diagrammar_describe', () => {
   });
 
   it('reports valid: false with issues for a schema-invalid diagram, as a successful call', async () => {
-    const client = await connectedClient({ root: undefined, noFs: true });
+    const client = await connectedClient({
+      root: undefined,
+      noFs: true,
+      icons: defaultIconRegistry(),
+    });
     const INVALID = 'diagrammar: 1\ntype: flowchart\nnodes: []\nedges:\n  - { from: a, to: b }\n';
     const result = await client.callTool({
       name: 'diagrammar_describe',
@@ -84,7 +101,11 @@ vDescribe('diagrammar_describe', () => {
   });
 
   it('excludes path from the registered schema under --no-fs', async () => {
-    const client = await connectedClient({ root: undefined, noFs: true });
+    const client = await connectedClient({
+      root: undefined,
+      noFs: true,
+      icons: defaultIconRegistry(),
+    });
     const tools = await client.listTools();
     const tool = tools.tools.find((t) => t.name === 'diagrammar_describe');
     if (tool === undefined) throw new Error('diagrammar_describe not found');
@@ -95,7 +116,11 @@ vDescribe('diagrammar_describe', () => {
   });
 
   it('includes path in the registered schema when fs is enabled', async () => {
-    const client = await connectedClient({ root: process.cwd(), noFs: false });
+    const client = await connectedClient({
+      root: process.cwd(),
+      noFs: false,
+      icons: defaultIconRegistry(),
+    });
     const tools = await client.listTools();
     const tool = tools.tools.find((t) => t.name === 'diagrammar_describe');
     if (tool === undefined) throw new Error('diagrammar_describe not found');
@@ -120,7 +145,7 @@ vDescribe('diagrammar_describe unmapped errno handling (C2)', () => {
   });
 
   it('ENOTDIR (a path segment is a file, not a directory) is a sanitised io_error envelope with no host path', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_describe',
       arguments: { path: 'ok.yaml/nested.yaml' },
@@ -136,7 +161,7 @@ vDescribe('diagrammar_describe unmapped errno handling (C2)', () => {
   });
 
   it('EISDIR (the path is a directory, not a file) is a sanitised io_error envelope with no host path', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_describe',
       arguments: { path: 'sub' },

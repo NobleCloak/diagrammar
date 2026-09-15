@@ -1,7 +1,12 @@
 export type DiagramType = 'flowchart' | 'architecture' | 'sequence';
 export type Direction = 'down' | 'right' | 'up' | 'left';
 export type LayoutEngine = 'dagre' | 'elk' | 'tala';
-export type Theme = 'light' | 'dark';
+/**
+ * A theme *reference* exactly as written in the file: a preset name
+ * (`light`, `dark`, `colorblind`, `mono`) or a relative path to a theme
+ * file (spec §3.1). Resolution to a `ResolvedTheme` happens in `render()`.
+ */
+export type Theme = string;
 
 export interface Style {
   fill?: string;
@@ -27,7 +32,8 @@ export type GraphShape =
   | 'queue'
   | 'cloud'
   | 'person'
-  | 'package'; // architecture (+ rect, hexagon)
+  | 'package' // architecture (+ rect, hexagon)
+  | 'image'; // both families; requires icon
 
 export const FLOWCHART_SHAPES: readonly GraphShape[] = [
   'oval',
@@ -36,6 +42,7 @@ export const FLOWCHART_SHAPES: readonly GraphShape[] = [
   'document',
   'parallelogram',
   'hexagon',
+  'image',
 ];
 export const ARCHITECTURE_SHAPES: readonly GraphShape[] = [
   'rect',
@@ -45,6 +52,7 @@ export const ARCHITECTURE_SHAPES: readonly GraphShape[] = [
   'person',
   'hexagon',
   'package',
+  'image',
 ];
 
 export type ParticipantKind = 'actor' | 'service' | 'database' | 'queue';
@@ -55,6 +63,7 @@ export interface NodeModel {
   kind: 'node';
   id: string;
   label: string;
+  icon?: string;
   shape: GraphShape;
   group?: string;
   description?: string;
@@ -65,6 +74,7 @@ export interface GroupModel {
   kind: 'group';
   id: string;
   label: string;
+  icon?: string;
   parent?: string;
   style?: Style;
 }
@@ -84,6 +94,7 @@ export interface ParticipantModel {
   kind: 'participant';
   id: string;
   label: string;
+  icon?: string;
   participantKind: ParticipantKind;
   description?: string;
   style?: Style;

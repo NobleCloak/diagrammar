@@ -4,6 +4,7 @@ import type { GraphDiagram } from '../model/types.js';
 import type { KeyMap } from './types.js';
 import { FONT_FAMILY } from '../engine/fonts.js';
 import { applyOverlay } from './index.js';
+import { presetTheme } from '../theme/index.js';
 
 function keyMapFor(shapeIds: Record<string, string>): KeyMap {
   return { shapeKey: (id) => shapeIds[id], connectionKey: () => undefined };
@@ -49,7 +50,7 @@ describe('applyOverlay (pure composition)', () => {
       callouts: [{ kind: 'callout', key: 'c1', id: 'c1', at: 'check', number: 1, text: 'note it' }],
     });
     const result = await applyOverlay(svg, laidOut, model, keyMapFor({ check: 'check' }), {
-      theme: 'light',
+      theme: presetTheme('light'),
       legend: true,
     });
 
@@ -86,7 +87,7 @@ describe('applyOverlay (pure composition)', () => {
       callouts: [{ kind: 'callout', key: 'c1', id: 'c1', at: 'check', number: 1, text: 'note it' }],
     });
     const result = await applyOverlay(svg, laidOut, model, keyMapFor({ check: 'check' }), {
-      theme: 'light',
+      theme: presetTheme('light'),
       legend: false,
     });
     expect(result.svg).not.toContain('dg-legend');
@@ -104,7 +105,7 @@ describe('applyOverlay (pure composition)', () => {
     };
     const model = baseModel();
     const result = await applyOverlay(svg, laidOut, model, keyMapFor({ check: 'check' }), {
-      theme: 'light',
+      theme: presetTheme('light'),
       legend: true,
     });
 
@@ -130,7 +131,7 @@ describe('applyOverlay (pure composition)', () => {
       callouts: [{ kind: 'callout', key: 'c1', id: 'c1', at: 'check', number: 1, text: 'note it' }],
     });
     const result = await applyOverlay(svg, laidOut, model, keyMapFor({ check: 'check' }), {
-      theme: 'dark',
+      theme: presetTheme('dark'),
       legend: true,
     });
 

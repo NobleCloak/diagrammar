@@ -7,6 +7,7 @@ import { parse } from '../parse.js';
 import { compile, createKeyMap } from '../compile/index.js';
 import { compileAndRender, shutdown } from '../engine/index.js';
 import { getRasterizer } from '../raster/index.js';
+import { resolveTheme } from '../theme/index.js';
 import { applyOverlay } from './index.js';
 import { escapeXml, parseViewBox } from './svg.js';
 import type { Box, OverlayOptions, OverlayResult } from './types.js';
@@ -43,10 +44,10 @@ interface RenderedOverlay {
  * — this is the determinism check's setup, not a synthetic-layout stand-in.
  */
 async function renderAndOverlay(model: Diagram, opts: OverlayOptions): Promise<RenderedOverlay> {
-  const { d2: d2Source } = compile(model);
+  const { d2: d2Source } = compile(model, undefined, opts.theme);
   const { svg, laidOut } = await compileAndRender(d2Source, {
     layout: model.layout,
-    theme: model.theme,
+    themeId: opts.theme.d2ThemeId,
   });
   const keyMap = createKeyMap(model, laidOut);
 
@@ -175,7 +176,10 @@ describe('applyOverlay against a real D2 render', () => {
     it('stamps every element once, sidecar matches, viewBox unchanged, deterministic, no warnings, valid PNG', async () => {
       const model = loadFixture(file);
       const { before, connectionCount, unresolvedConnectionCount, result1, result2 } =
-        await renderAndOverlay(model, { theme: model.theme, legend: true });
+        await renderAndOverlay(model, {
+          theme: await resolveTheme(model.theme, undefined),
+          legend: true,
+        });
 
       assertCoreInvariants(model, result1, result2);
       expectUnchangedViewBox(before, parseViewBox(result1.svg));
@@ -195,7 +199,7 @@ describe('applyOverlay against a real D2 render', () => {
   it('places a badge, an anchored note, a floating note, and the legend, and grows the canvas', async () => {
     const model = parseOrThrow(INLINE_YAML, 'inline callout/note/view fixture');
     const { before, result1, result2 } = await renderAndOverlay(model, {
-      theme: model.theme,
+      theme: await resolveTheme(model.theme, undefined),
       legend: true,
     });
 
@@ -231,7 +235,7 @@ describe('applyOverlay against a real D2 render', () => {
     // badge markup.
     const model = parseOrThrow(INLINE_YAML, 'inline callout/note/view fixture');
     const { result1, result2 } = await renderAndOverlay(model, {
-      theme: model.theme,
+      theme: await resolveTheme(model.theme, undefined),
       legend: true,
       view: 'happy',
     });
@@ -276,7 +280,7 @@ edges:
 `;
     const model = parseOrThrow(yaml, 'styled node, no view fixture');
     const { result1, result2 } = await renderAndOverlay(model, {
-      theme: model.theme,
+      theme: await resolveTheme(model.theme, undefined),
       legend: true,
     });
 

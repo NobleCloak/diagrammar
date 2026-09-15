@@ -137,6 +137,24 @@ describe('toErrorResult', () => {
     expect(parsed.message).not.toContain('/Users/');
   });
 
+  it('leaves a relative theme path untouched when no root is configured, but still replaces a genuine absolute path', () => {
+    const relErr = new DiagrammarError('asset "./themes/house.yaml" cannot be read', 'io_error');
+    const relResult = toErrorResult(relErr);
+    const relParsed = JSON.parse((relResult.content[0] as { text: string }).text) as {
+      code: string;
+      message: string;
+    };
+    expect(relParsed.message).toBe('asset "./themes/house.yaml" cannot be read');
+
+    const absErr = new DiagrammarError('asset "/Users/x/secret.yaml" cannot be read', 'io_error');
+    const absResult = toErrorResult(absErr);
+    const absParsed = JSON.parse((absResult.content[0] as { text: string }).text) as {
+      code: string;
+      message: string;
+    };
+    expect(absParsed.message).toBe('asset "<path>" cannot be read');
+  });
+
   it('maps an unmapped Node errno (e.g. ENOTDIR) to a sanitised io_error envelope instead of rethrowing', () => {
     const root = '/Users/someone/diagrams';
     const err = makeErrnoError('ENOTDIR', `not a directory, stat '${root}/ok.yaml/nested.yaml'`);

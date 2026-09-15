@@ -2,6 +2,8 @@
   "files": [],
   "references": [
     { "path": "packages/core" },
+    { "path": "packages/icons-lucide" },
+    { "path": "packages/icons-simple-icons" },
     { "path": "packages/mcp" },
     { "path": "packages/cli" }
   ]

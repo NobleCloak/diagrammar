@@ -9,10 +9,8 @@ import type {
   LaidOutDiagram,
   LaidOutShape,
   Point,
-  Theme,
 } from './types.js';
 
-const THEME_ID: Record<Theme, number> = { light: 0, dark: 200 };
 const PAD = 24;
 const SCALE = 1;
 
@@ -221,7 +219,7 @@ export async function compileAndRender(
         d2Source,
         toCompileOptions({
           layout: opts.layout,
-          themeID: THEME_ID[opts.theme],
+          themeID: opts.themeId,
           pad: PAD,
           scale: SCALE,
           fontRegular: fonts.regular,

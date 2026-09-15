@@ -1,0 +1,18 @@
+diagrammar-theme: 1
+base: light
+palette:
+  background: '#f6f3ee'
+  fill: '#fffdf8'
+  stroke: '#4a3f35'
+  text: '#2b2520'
+  groupFill: '#efe8dc'
+  edge: '#8c5a2b'
+defaults:
+  nodes:
+    strokeWidth: 2
+  groups:
+    dashed: true
+  shapes:
+    cylinder: { fill: '#e6efe3' }
+    queue: { fill: '#fbe9d0' }
+    person: { fill: '#e9e3f5' }

@@ -1,0 +1,44 @@
+diagrammar: 1
+type: architecture
+title: Order platform with icons
+direction: right
+
+groups:
+  - id: edge
+    label: Edge
+    icon: lucide/cloud
+  - id: data
+    label: Data
+    icon: lucide/database
+
+nodes:
+  - id: gateway
+    label: API gateway
+    shape: rect
+    in: edge
+    icon: lucide/server
+  - id: k8s
+    label: Kubernetes
+    shape: image
+    icon: simple-icons/kubernetes
+    in: edge
+  - id: pg
+    label: PostgreSQL
+    shape: image
+    icon: simple-icons/postgresql
+    in: data
+  - id: cache
+    label: Cache
+    shape: cylinder
+    in: data
+    icon: lucide/zap
+  - id: legacy
+    label: Legacy export
+    shape: rect
+    icon: ./icons/custom.svg
+
+edges:
+  - { from: gateway, to: k8s, label: 'routes' }
+  - { from: k8s, to: pg, label: 'read/write' }
+  - { from: k8s, to: cache, label: 'cache' }
+  - { from: pg, to: legacy, label: 'nightly' }

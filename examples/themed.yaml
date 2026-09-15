@@ -1,0 +1,42 @@
+diagrammar: 1
+type: architecture
+title: Order platform (house theme)
+theme: ./themes/house.yaml
+direction: right
+
+groups:
+  - id: edge
+    label: Edge
+  - id: platform
+    label: Platform
+  - id: data
+    label: Data
+
+nodes:
+  - id: client
+    label: Web client
+    shape: person
+    in: edge
+  - id: gateway
+    label: API gateway
+    shape: cloud
+    in: edge
+  - id: orders
+    label: Order service
+    shape: rect
+    in: platform
+    style: { fill: '#fff3cd' }
+  - id: queue
+    label: Fulfilment queue
+    shape: queue
+    in: platform
+  - id: db
+    label: Orders database
+    shape: cylinder
+    in: data
+
+edges:
+  - { from: client, to: gateway, label: 'HTTPS' }
+  - { from: gateway, to: orders, label: 'gRPC' }
+  - { from: orders, to: queue, label: 'publish' }
+  - { from: orders, to: db, label: 'read/write', style: { dashed: true } }

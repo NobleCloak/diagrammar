@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { validate } from '@noblecloak/diagrammar-core';
-import { resolveSource, type ToolContext } from '../fs.js';
+import { checkIconRefs, checkThemeRef, parse } from '@noblecloak/diagrammar-core';
+import { assetResolverFor, resolveSource, type ToolContext } from '../fs.js';
 import { withToolErrors } from '../toolError.js';
 
 const commonShape = {
@@ -39,14 +39,23 @@ export function register(server: McpServer, ctx: ToolContext): void {
     {
       title: 'Validate a diagram',
       description:
-        'Validates a Diagrammar YAML document and reports schema/semantic errors with path and line number. An invalid diagram is still a successful call (ok: false with issues), not a tool error.',
+        'Validates a Diagrammar YAML document and reports schema/semantic errors, theme-file errors, and unknown or invalid icons, with path and line number. An invalid diagram is still a successful call (ok: false with issues), not a tool error.',
       inputSchema: validateShapeFor(ctx),
       annotations: { readOnlyHint: true },
     },
     (args) =>
       withToolErrors(async () => {
-        const { text } = await resolveSource(ctx, args);
-        const result = validate(text);
+        const { text, resolvedPath } = await resolveSource(ctx, args);
+        const parsed = parse(text);
+        const result = parsed.ok
+          ? await (async () => {
+              const resolver = assetResolverFor(ctx, resolvedPath);
+              const themeIssues = await checkThemeRef(parsed.diagram.theme, resolver);
+              const iconIssues = await checkIconRefs(parsed.diagram, ctx.icons, resolver);
+              const issues = [...themeIssues, ...iconIssues];
+              return { ok: issues.length === 0, issues };
+            })()
+          : { ok: false, issues: parsed.issues };
         return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
       }, ctx.root),
   );

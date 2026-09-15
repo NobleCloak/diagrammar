@@ -1,8 +1,35 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { gzipSync } from 'node:zlib';
 import { run, help } from './mcp.js';
+
+async function writeIconSetDir(dir: string): Promise<void> {
+  await mkdir(dir, { recursive: true });
+  await writeFile(
+    join(dir, 'index.json'),
+    JSON.stringify({
+      'diagrammar-icons': 1,
+      id: 'aws',
+      version: 't',
+      license: { spdx: 'LicenseRef-AWS', url: 'https://aws.amazon.com/architecture/icons/' },
+      names: ['lambda'],
+      aliases: {},
+    }),
+  );
+  await writeFile(
+    join(dir, 'icons.json.gz'),
+    gzipSync(
+      Buffer.from(
+        JSON.stringify({
+          lambda:
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect width="1" height="1" fill="#f90"/></svg>',
+        }),
+      ),
+    ),
+  );
+}
 
 describe('mcp command', () => {
   afterEach(() => {
@@ -117,6 +144,31 @@ describe('mcp command', () => {
     try {
       const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const runPromise = run(['--port', '0', '--root', dir]);
+      await new Promise((r) => setTimeout(r, 100));
+      expect(errSpy.mock.calls.some((c) => String(c[0]).includes('listening at'))).toBe(true);
+      process.emit('SIGINT');
+      expect(await runPromise).toBe(0);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects a --icons directory with no index.json', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const code = await run(['--icons', '/nonexistent/dir', '--port', '0']);
+    expect(code).toBe(1);
+    expect(errSpy).toHaveBeenCalledTimes(1);
+    const message = String(errSpy.mock.calls[0]![0]);
+    expect(message).toMatch(/^mcp: /);
+    expect(message).toContain('index.json');
+  });
+
+  it('accepts a valid --icons set directory', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'diagrammar-mcp-icons-'));
+    try {
+      await writeIconSetDir(join(dir, 'aws'));
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const runPromise = run(['--icons', join(dir, 'aws'), '--port', '0', '--no-fs']);
       await new Promise((r) => setTimeout(r, 100));
       expect(errSpy.mock.calls.some((c) => String(c[0]).includes('listening at'))).toBe(true);
       process.emit('SIGINT');

@@ -1,0 +1,54 @@
+{
+  "name": "@noblecloak/diagrammar-icons-lucide",
+  "version": "0.0.0",
+  "description": "Lucide icon set for Diagrammar (`icon: lucide/<name>`).",
+  "type": "module",
+  "license": "ISC",
+  "homepage": "https://github.com/NobleCloak/diagrammar#readme",
+  "bugs": "https://github.com/NobleCloak/diagrammar/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NobleCloak/diagrammar.git",
+    "directory": "packages/icons-lucide"
+  },
+  "keywords": [
+    "diagram",
+    "icons",
+    "lucide",
+    "diagram-as-code"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "icons.json.gz",
+    "index.json",
+    "LICENSE",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "generate": "bun run ../../scripts/build-icon-set.ts lucide",
+    "build": "bun run generate && tsdown",
+    "test": "vitest run",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "@noblecloak/diagrammar-core": "^0.1.1"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "tsdown": "0.23.0",
+    "@types/node": "^24.0.0"
+  }
+}

@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import type { DiagramType, Direction, LayoutEngine, Theme } from '../model/types.js';
+import type { DiagramType, Direction, LayoutEngine } from '../model/types.js';
+import { PRESET_NAMES } from '../theme/presets.js';
 
 const DIAGRAM_TYPES = [
   'flowchart',
@@ -14,8 +15,33 @@ export const DirectionSchema = z.enum(DIRECTIONS);
 const LAYOUT_ENGINES = ['dagre', 'elk', 'tala'] as const satisfies readonly LayoutEngine[];
 export const LayoutEngineSchema = z.enum(LAYOUT_ENGINES);
 
-const THEMES = ['light', 'dark'] as const satisfies readonly Theme[];
-export const ThemeSchema = z.enum(THEMES);
+/**
+ * Spec §3.1: a preset name, or anything containing `/` or ending in
+ * .yaml/.yml. Modeled as a union (not `z.string().refine(...)`) so
+ * `z.toJSONSchema` emits an `anyOf` carrying the four-value enum instead of
+ * degrading to a bare `string` (spec §8, published JSON Schema).
+ *
+ * The regex branch needs `abort: true`: without it, Zod 4's union resolver
+ * treats a failed `invalid_value` (enum) issue as "aborted" (no `continue`
+ * flag) but a failed built-in `regex` check as "not aborted" (`continue:
+ * true`), so when exactly one branch is non-aborted it returns that
+ * branch's own issue directly and never reaches the union's custom `error`
+ * message. Marking the regex check `abort: true` makes both branches
+ * aborted on failure, which routes through `invalid_union` and surfaces
+ * this message as `issues[0]`.
+ *
+ * The regex itself is written case-insensitively by spelling out each
+ * letter's case (`[yY][aA]?[mM][lL]`) rather than with the `i` flag:
+ * `z.toJSONSchema` emits a schema's `pattern` as the regex source with no
+ * flags, so an external JSON Schema validator applying that pattern would
+ * reject `.YAML`/`.YML` if the source relied on `i`.
+ */
+export const ThemeSchema = z.union(
+  [z.enum(PRESET_NAMES), z.string().regex(/\/|\.[yY][aA]?[mM][lL]$/, { abort: true })],
+  {
+    error: `theme must be one of ${PRESET_NAMES.join(', ')} or a relative path to a .yaml theme file`,
+  },
+);
 
 /**
  * Every element-declared `id` (nodes, groups, edges, participants, messages,

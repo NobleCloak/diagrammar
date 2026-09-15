@@ -132,7 +132,7 @@ describe('diagrammar MCP server (integration)', () => {
     await client.close();
   });
 
-  it('lists all seven tools', async () => {
+  it('lists all eight tools', async () => {
     const client = await connect(serverUrl);
     const result = await client.listTools();
     expect(result.tools.map((t) => t.name).sort()).toEqual(
@@ -140,6 +140,7 @@ describe('diagrammar MCP server (integration)', () => {
         'diagrammar_create',
         'diagrammar_describe',
         'diagrammar_edit',
+        'diagrammar_icons',
         'diagrammar_list',
         'diagrammar_render',
         'diagrammar_schema',
@@ -282,11 +283,12 @@ describe('diagrammar MCP server (integration)', () => {
     await client.close();
   });
 
-  it('lists both resources', async () => {
+  it('lists all resources', async () => {
     const client = await connect(serverUrl);
     const result = await client.listResources();
     expect(result.resources.map((r) => r.uri).sort()).toEqual([
       'diagrammar://guide',
+      'diagrammar://schema/theme-v1',
       'diagrammar://schema/v1',
     ]);
     await client.close();
@@ -332,13 +334,14 @@ describe('diagrammar MCP server (integration)', () => {
     await client.close();
   });
 
-  it('a --no-fs server exposes exactly five tools and does not offer a path argument at all', async () => {
+  it('a --no-fs server exposes exactly six tools and does not offer a path argument at all', async () => {
     const client = await connect(noFsUrl);
     const tools = await client.listTools();
     expect(tools.tools.map((t) => t.name).sort()).toEqual(
       [
         'diagrammar_describe',
         'diagrammar_edit',
+        'diagrammar_icons',
         'diagrammar_render',
         'diagrammar_schema',
         'diagrammar_validate',

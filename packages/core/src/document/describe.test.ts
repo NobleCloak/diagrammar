@@ -203,11 +203,23 @@ vitestDescribe('describe — invalid input', () => {
     );
   });
 
-  it('drops an invalid enum-like meta field instead of returning a bogus-typed value (M10)', () => {
+  it('drops an invalid enum-like meta field, but echoes theme as a free reference string (M10)', () => {
     const result = describe('diagrammar: 1\ntype: bogus\ntheme: neon\ntitle: Broken\n');
     expect(result.valid).toBe(false);
     expect(result.type).toBeUndefined();
-    expect(result.theme).toBeUndefined();
+    expect(result.theme).toBe('neon');
     expect(result.title).toBe('Broken');
   });
+});
+
+it('reports icon references on nodes, groups and participants', () => {
+  const graph = describe(
+    'diagrammar: 1\ntype: architecture\ngroups:\n  - { id: g, icon: lucide/cloud }\nnodes:\n  - { id: a, in: g, icon: ./icons/x.svg }\n',
+  );
+  expect(graph.elements.find((e) => e.key === 'g')?.icon).toBe('lucide/cloud');
+  expect(graph.elements.find((e) => e.key === 'a')?.icon).toBe('./icons/x.svg');
+  const seq = describe(
+    'diagrammar: 1\ntype: sequence\nparticipants:\n  - { id: u, icon: lucide/user }\n',
+  );
+  expect(seq.elements[0]?.icon).toBe('lucide/user');
 });

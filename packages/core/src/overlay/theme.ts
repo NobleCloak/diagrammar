@@ -1,4 +1,4 @@
-import type { Theme } from '../model/types.js';
+import type { ResolvedTheme } from '../theme/types.js';
 import type { ThemeTokens } from './types.js';
 
 // Light matches D2 theme 0; dark matches D2 theme 200 (spec section 5.5).
@@ -26,6 +26,10 @@ const DARK_TOKENS: ThemeTokens = {
   canvas: '#1E1E2E',
 };
 
-export function tokensFor(theme: Theme): ThemeTokens {
-  return theme === 'dark' ? DARK_TOKENS : LIGHT_TOKENS;
+/** Light/dark token set by `mode`; the canvas follows the palette's `background` (spec §4.2). */
+export function tokensFor(theme: ResolvedTheme): ThemeTokens {
+  const base = theme.mode === 'dark' ? DARK_TOKENS : LIGHT_TOKENS;
+  return theme.palette.background !== undefined
+    ? { ...base, canvas: theme.palette.background }
+    : base;
 }

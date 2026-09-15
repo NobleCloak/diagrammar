@@ -28,11 +28,27 @@ describe('envelope enums', () => {
     }
     expect(LayoutEngineSchema.safeParse('graphviz').success).toBe(false);
   });
+});
 
-  it('ThemeSchema accepts light/dark only', () => {
-    expect(ThemeSchema.safeParse('light').success).toBe(true);
-    expect(ThemeSchema.safeParse('dark').success).toBe(true);
-    expect(ThemeSchema.safeParse('solarized').success).toBe(false);
+describe('ThemeSchema (spec §3.1)', () => {
+  it.each(['light', 'dark', 'colorblind', 'mono'])('accepts preset %s', (name) => {
+    expect(ThemeSchema.safeParse(name).success).toBe(true);
+  });
+  it.each(['./themes/house.yaml', 'house.yml', '../shared/t.yaml'])('accepts path %s', (p) => {
+    expect(ThemeSchema.safeParse(p).success).toBe(true);
+  });
+
+  it.each(['HOUSE.YAML', 'themes/x.YML'])(
+    'accepts uppercase extensions %s (the pattern is case-insensitive by construction, not the /i flag)',
+    (p) => {
+      expect(ThemeSchema.safeParse(p).success).toBe(true);
+    },
+  );
+  it('rejects an unknown bare name with a message naming the presets', () => {
+    const result = ThemeSchema.safeParse('neon');
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.error.issues[0]?.message).toContain('light, dark, colorblind, mono');
   });
 });
 

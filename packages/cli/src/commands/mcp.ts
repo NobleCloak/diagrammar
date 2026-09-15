@@ -1,9 +1,9 @@
 import { parseArgs } from 'node:util';
 import { stat } from 'node:fs/promises';
 import { DiagrammarError } from '@noblecloak/diagrammar-core';
-import { serve, type ServeConfig } from '@noblecloak/diagrammar-mcp';
+import { registryWithDirs, serve, type ServeConfig } from '@noblecloak/diagrammar-mcp';
 
-export const help = `diagrammar mcp [--root <dir>] [--port 3737] [--host 127.0.0.1] [--no-fs] [--allow-origin <origin>]...
+export const help = `diagrammar mcp [--root <dir>] [--port 3737] [--host 127.0.0.1] [--no-fs] [--allow-origin <origin>]... [--icons <dir>]...
 
 Runs the Diagrammar MCP server (Streamable HTTP) until interrupted.
 
@@ -13,6 +13,7 @@ Options:
   --host <addr>            Address to bind (default: 127.0.0.1).
   --no-fs                  Disable filesystem access entirely (pure render/edit service).
   --allow-origin <origin>  Additional allowed Origin header value (repeatable).
+  --icons <dir>            Register an extra icon-set directory, relative to the current directory (repeatable).
 `;
 
 export async function run(argv: string[]): Promise<number> {
@@ -24,6 +25,7 @@ export async function run(argv: string[]): Promise<number> {
       host: { type: 'string' },
       'no-fs': { type: 'boolean', default: false },
       'allow-origin': { type: 'string', multiple: true },
+      icons: { type: 'string', multiple: true },
     },
     allowPositionals: false,
   });
@@ -64,6 +66,7 @@ export async function run(argv: string[]): Promise<number> {
 
   let result;
   try {
+    config.icons = registryWithDirs(values.icons ?? []);
     result = await serve(config);
   } catch (err) {
     if (err instanceof DiagrammarError) {

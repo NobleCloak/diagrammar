@@ -2,10 +2,22 @@ import { describe, it, expect } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { render, parse, walkthrough } from '@noblecloak/diagrammar-core';
+import {
+  render,
+  parse,
+  walkthrough,
+  fileResolver,
+  IconRegistry,
+} from '@noblecloak/diagrammar-core';
+import { lucide } from '@noblecloak/diagrammar-icons-lucide';
+import { simpleIcons } from '@noblecloak/diagrammar-icons-simple-icons';
 
 const examplesDir = path.dirname(fileURLToPath(import.meta.url));
 const goldensDir = path.join(examplesDir, 'goldens');
+const resolver = fileResolver(examplesDir);
+const icons = new IconRegistry();
+icons.register(lucide);
+icons.register(simpleIcons);
 
 async function loadExample(name: string): Promise<string> {
   return readFile(path.join(examplesDir, name), 'utf-8');
@@ -15,18 +27,18 @@ async function loadGolden(name: string): Promise<Buffer> {
   return readFile(path.join(goldensDir, name));
 }
 
-const STEMS = ['flowchart', 'architecture', 'sequence', 'annotated'];
+const STEMS = ['flowchart', 'architecture', 'sequence', 'annotated', 'themed', 'icons'];
 
 describe('render goldens', () => {
   for (const stem of STEMS) {
     it(`${stem}.yaml renders byte-identical to its committed SVG and PNG goldens`, async () => {
       const yaml = await loadExample(`${stem}.yaml`);
 
-      const svgResult = await render(yaml, { format: 'svg' });
+      const svgResult = await render(yaml, { format: 'svg', resolver, icons });
       const expectedSvg = await loadGolden(`${stem}.svg`);
       expect(Buffer.from(svgResult.svg, 'utf-8').equals(expectedSvg)).toBe(true);
 
-      const pngResult = await render(yaml, { format: 'png' });
+      const pngResult = await render(yaml, { format: 'png', resolver, icons });
       const expectedPng = await loadGolden(`${stem}.png`);
       expect(Buffer.from(pngResult.bytes).equals(expectedPng)).toBe(true);
     });
@@ -47,11 +59,11 @@ describe('render goldens', () => {
     if (!parsed.ok) return;
 
     for (const view of parsed.diagram.views) {
-      const svgResult = await render(yaml, { format: 'svg', view: view.id });
+      const svgResult = await render(yaml, { format: 'svg', view: view.id, resolver, icons });
       const expectedSvg = await loadGolden(`annotated.${view.id}.svg`);
       expect(Buffer.from(svgResult.svg, 'utf-8').equals(expectedSvg)).toBe(true);
 
-      const pngResult = await render(yaml, { format: 'png', view: view.id });
+      const pngResult = await render(yaml, { format: 'png', view: view.id, resolver, icons });
       const expectedPng = await loadGolden(`annotated.${view.id}.png`);
       expect(Buffer.from(pngResult.bytes).equals(expectedPng)).toBe(true);
     }

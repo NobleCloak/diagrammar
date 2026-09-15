@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { DiagramFile } from '../schema/index.js';
 import { buildModel } from './build.js';
 import { runSemanticRules } from './semantic.js';
+import { parse } from '../parse.js';
 
 function build(file: DiagramFile) {
   return buildModel(file);
@@ -324,5 +325,54 @@ describe('a fully valid diagram', () => {
       views: [{ id: 'happy', focus: ['start', 'check', 'ship', 'yes'] }],
     });
     expect(runSemanticRules(diagram)).toEqual([]);
+  });
+});
+
+describe('rule 10: theme path form is a well-formed relative path', () => {
+  it('accepts a preset and a relative path, including a leading ..', () => {
+    expect(parse('diagrammar: 1\ntype: flowchart\ntheme: mono\n').ok).toBe(true);
+    expect(parse('diagrammar: 1\ntype: flowchart\ntheme: ../t/house.yaml\n').ok).toBe(true);
+  });
+  it('rejects an absolute path at path "theme"', () => {
+    const result = parse('diagrammar: 1\ntype: flowchart\ntheme: /etc/house.yaml\n');
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues[0]).toMatchObject({ path: 'theme', line: 3 });
+  });
+  it('rejects a backslash path', () => {
+    expect(parse('diagrammar: 1\ntype: flowchart\ntheme: "themes\\\\house.yaml"\n').ok).toBe(false);
+  });
+});
+
+describe('rule 11: shape image requires icon; rule 12: icon path syntax', () => {
+  it('rejects shape: image without icon at nodes[i].shape', () => {
+    const result = parse(
+      'diagrammar: 1\ntype: architecture\nnodes:\n  - { id: a, shape: image }\n',
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues[0]).toMatchObject({
+      path: 'nodes[0].shape',
+      message: 'shape "image" requires an icon',
+    });
+  });
+  it('accepts shape: image with an icon in both graph families', () => {
+    expect(
+      parse(
+        'diagrammar: 1\ntype: flowchart\nnodes:\n  - { id: a, shape: image, icon: lucide/database }\n',
+      ).ok,
+    ).toBe(true);
+    expect(
+      parse(
+        'diagrammar: 1\ntype: architecture\nnodes:\n  - { id: a, shape: image, icon: lucide/database }\n',
+      ).ok,
+    ).toBe(true);
+  });
+  it('accepts icons on participants', () => {
+    expect(
+      parse(
+        'diagrammar: 1\ntype: sequence\nparticipants:\n  - { id: u, kind: actor, icon: lucide/user }\n',
+      ).ok,
+    ).toBe(true);
   });
 });

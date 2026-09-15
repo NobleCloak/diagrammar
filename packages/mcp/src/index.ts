@@ -5,3 +5,4 @@ export type { ServeConfig, ServeResult } from './serve.js';
 export { writeAtomic } from './fs.js';
 export type { WriteAtomicOptions } from './fs.js';
 export { seedRemovalOps } from './tools/create.js';
+export { defaultIconRegistry, registryWithDirs } from './icons.js';

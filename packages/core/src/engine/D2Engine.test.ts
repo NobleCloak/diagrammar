@@ -22,7 +22,7 @@ describe('D2Engine', () => {
   });
 
   it('compiles and renders a diagram to SVG with laid-out coordinates', async () => {
-    const result = await compileAndRender(SAMPLE_D2, { layout: 'dagre', theme: 'light' });
+    const result = await compileAndRender(SAMPLE_D2, { layout: 'dagre', themeId: 0 });
     expect(result.svg).toContain('<svg');
     expect(result.laidOut.shapes.length).toBeGreaterThanOrEqual(2);
     for (const shape of result.laidOut.shapes) {
@@ -40,15 +40,15 @@ describe('D2Engine', () => {
   }, 30_000);
 
   it('supports a second call after the first completes', async () => {
-    const first = await compileAndRender(SAMPLE_D2, { layout: 'dagre', theme: 'light' });
-    const second = await compileAndRender(SAMPLE_D2, { layout: 'dagre', theme: 'dark' });
+    const first = await compileAndRender(SAMPLE_D2, { layout: 'dagre', themeId: 0 });
+    const second = await compileAndRender(SAMPLE_D2, { layout: 'dagre', themeId: 200 });
     expect(first.svg).toContain('<svg');
     expect(second.svg).toContain('<svg');
     expect(second.svg).not.toBe(first.svg);
   }, 30_000);
 
   it('derives origin from the inner <svg> viewBox and viewBox from the outer', async () => {
-    const result = await compileAndRender(SAMPLE_D2, { layout: 'dagre', theme: 'light' });
+    const result = await compileAndRender(SAMPLE_D2, { layout: 'dagre', themeId: 0 });
     const viewBoxes = [
       ...result.svg.matchAll(/viewBox="([-\d.eE]+) ([-\d.eE]+) ([-\d.eE]+) ([-\d.eE]+)"/g),
     ].map((match) => ({
@@ -69,16 +69,16 @@ describe('D2Engine', () => {
   }, 30_000);
 
   it('re-creates the engine after shutdown', async () => {
-    await compileAndRender(SAMPLE_D2, { layout: 'dagre', theme: 'light' });
+    await compileAndRender(SAMPLE_D2, { layout: 'dagre', themeId: 0 });
     await shutdown();
-    const result = await compileAndRender(SAMPLE_D2, { layout: 'dagre', theme: 'light' });
+    const result = await compileAndRender(SAMPLE_D2, { layout: 'dagre', themeId: 0 });
     expect(result.svg).toContain('<svg');
   }, 30_000);
 
   it('rejects invalid D2 source with a DiagrammarError including D2 error text', async () => {
     expect.assertions(3);
     try {
-      await compileAndRender(INVALID_D2, { layout: 'dagre', theme: 'light' });
+      await compileAndRender(INVALID_D2, { layout: 'dagre', themeId: 0 });
     } catch (error) {
       expect(error).toBeInstanceOf(DiagrammarError);
       expect(error instanceof DiagrammarError ? error.message.length : 0).toBeGreaterThan(0);
@@ -88,8 +88,8 @@ describe('D2Engine', () => {
 
   it('serializes concurrent compileAndRender calls without cross-talk', async () => {
     const [resultA, resultB] = await Promise.all([
-      compileAndRender(SAMPLE_D2, { layout: 'dagre', theme: 'light' }),
-      compileAndRender(OTHER_D2, { layout: 'dagre', theme: 'light' }),
+      compileAndRender(SAMPLE_D2, { layout: 'dagre', themeId: 0 }),
+      compileAndRender(OTHER_D2, { layout: 'dagre', themeId: 0 }),
     ]);
     expect(resultA.svg).toContain('<svg');
     expect(resultB.svg).toContain('<svg');
@@ -97,7 +97,7 @@ describe('D2Engine', () => {
   }, 30_000);
 
   it('waits for an in-flight render before shutdown disposes the engine', async () => {
-    const pending = compileAndRender(SAMPLE_D2, { layout: 'dagre', theme: 'light' });
+    const pending = compileAndRender(SAMPLE_D2, { layout: 'dagre', themeId: 0 });
     const closing = shutdown();
     const [renderResult] = await Promise.all([pending, closing]);
     expect(renderResult.svg).toContain('<svg');

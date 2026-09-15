@@ -1,9 +1,23 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { walkthrough as buildWalkthrough } from './walkthrough/index.js';
 import type { WalkthroughOptions } from './walkthrough/index.js';
 import { parse as parseForWalkthrough } from './parse.js';
 import { ValidationError as WalkthroughValidationError } from './errors.js';
+import { findPackageRoot } from './engine/fonts.js';
 
-export const VERSION = '0.1.0';
+/**
+ * This package's own version, read from its `package.json` at module load
+ * so it never drifts from what Changesets bumps (unlike a hardcoded
+ * literal). `findPackageRoot` already handles the src/ vs. dist/ depth
+ * difference (see its doc comment in engine/fonts.ts).
+ */
+export const VERSION: string = (
+  JSON.parse(
+    readFileSync(join(findPackageRoot(fileURLToPath(import.meta.url)), 'package.json'), 'utf8'),
+  ) as { version: string }
+).version;
 
 export * from './errors.js';
 
@@ -14,6 +28,60 @@ export type { ParseResult } from './parse.js';
 export { validate } from './validate.js';
 export type { ValidationResult } from './validate.js';
 export { createDocument } from './create.js';
+
+export { fileResolver, memoryResolver, isPathRef, normalizeRelativePath } from './assets/index.js';
+export type { AssetResolver, FileResolverOptions } from './assets/index.js';
+export {
+  PRESETS,
+  PRESET_NAMES,
+  isPresetName,
+  presetTheme,
+  buildTheme,
+  mergeStyle,
+  parseThemeFile,
+  resolveTheme,
+  checkThemeRef,
+  ThemeFileSchema,
+  generateThemeJsonSchema,
+} from './theme/index.js';
+export type {
+  PresetName,
+  PresetSpec,
+  ThemeMode,
+  OverrideSlot,
+  Palette,
+  ThemeDefaults,
+  ResolvedTheme,
+  ThemeFileInput,
+  ThemeParseResult,
+  StyleTarget,
+} from './theme/index.js';
+
+export {
+  ICON_SET_REF_RE,
+  ICON_MAX_BYTES,
+  ICON_SET_DATA_FILE,
+  ICON_SET_INDEX_FILE,
+  isIconPathRef,
+  parseIconRef,
+  sanitizeSvg,
+  memoryIconSet,
+  openIconSetDir,
+  svgDataUri,
+  IconRegistry,
+  resolveIcons,
+  checkIconRefs,
+} from './icons/index.js';
+export type {
+  IconRef,
+  SanitizeOptions,
+  IconLicense,
+  IconMatch,
+  IconSet,
+  IconSetIndex,
+  ResolvedIcon,
+  ResolvedIcons,
+} from './icons/index.js';
 
 export { render } from './render.js';
 export type { RenderOptions, RenderResult } from './render.js';

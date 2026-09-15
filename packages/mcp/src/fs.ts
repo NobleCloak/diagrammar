@@ -1,10 +1,14 @@
 import { existsSync, realpathSync } from 'node:fs';
 import { link, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
-import { basename, dirname, isAbsolute, relative, resolve } from 'node:path';
+import { basename, dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import {
   DiagrammarError,
   ValidationError,
+  isErrnoException,
+  normalizeRelativePath,
+  type AssetResolver,
+  type IconRegistry,
   type ValidationIssue,
 } from '@noblecloak/diagrammar-core';
 
@@ -12,6 +16,8 @@ export interface ToolContext {
   /** Absolute path to the jailed root directory. Always defined when noFs is false. */
   root: string | undefined;
   noFs: boolean;
+  /** Icon sets available to `icon:` set-form references. */
+  icons: IconRegistry;
 }
 
 /**
@@ -240,4 +246,53 @@ export async function writeAtomic(
   } finally {
     await rm(tempPath, { force: true });
   }
+}
+
+/**
+ * The MCP server's asset resolver (spec §6.2): paths are relative to the
+ * diagram's directory (`resolvedPath` from `resolveSource`) or to the root
+ * for inline `source`, and every read goes through `resolveInRoot`, so the
+ * same lexical + symlink jail that guards `path` arguments guards theme
+ * files. Under `--no-fs` every read fails with `asset_fs_disabled`.
+ */
+export function assetResolverFor(ctx: ToolContext, resolvedPath?: string): AssetResolver {
+  if (ctx.noFs || ctx.root === undefined) {
+    return {
+      read: (relPath: string) =>
+        Promise.reject(
+          new DiagrammarError(
+            `asset "${relPath}" cannot be read: filesystem access is disabled on this server (--no-fs)`,
+            'asset_fs_disabled',
+          ),
+        ),
+    };
+  }
+  const root = ctx.root;
+  const baseAbs = resolvedPath !== undefined ? dirname(resolvedPath) : root;
+  return {
+    async read(relPath: string): Promise<Uint8Array> {
+      const target = resolve(baseAbs, normalizeRelativePath(relPath));
+      const rootRel = relative(root, target).split(sep).join('/');
+      let abs: string;
+      try {
+        abs = resolveInRoot(root, rootRel);
+      } catch (error) {
+        if (error instanceof DiagrammarError && error.code === 'path_outside_root') {
+          throw new DiagrammarError(
+            `asset "${relPath}" escapes the server root`,
+            'asset_outside_base',
+          );
+        }
+        throw error;
+      }
+      try {
+        return await readFile(abs);
+      } catch (error) {
+        if (isErrnoException(error) && error.code === 'ENOENT') {
+          throw new DiagrammarError(`asset "${relPath}" not found`, 'asset_not_found');
+        }
+        throw error;
+      }
+    },
+  };
 }

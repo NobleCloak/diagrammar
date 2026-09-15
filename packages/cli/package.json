@@ -47,7 +47,8 @@
   },
   "dependencies": {
     "@noblecloak/diagrammar-core": "^0.1.1",
-    "@noblecloak/diagrammar-mcp": "^0.1.1"
+    "@noblecloak/diagrammar-mcp": "^0.1.1",
+    "fflate": "0.8.3"
   },
   "devDependencies": {
     "typescript": "6.0.3",

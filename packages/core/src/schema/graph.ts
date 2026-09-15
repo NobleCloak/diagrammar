@@ -1,8 +1,39 @@
 import { z } from 'zod';
 import type { DiagramType, GraphShape } from '../model/types.js';
+import {
+  ICON_REF_FORMS_MESSAGE,
+  ICON_SET_REF_RE,
+  ICON_SVG_PATH_RE,
+  parseIconRef,
+} from '../icons/ref.js';
 import { NoteSchema, CalloutSchema, ViewSchema } from './annotations.js';
 import { BaseEnvelopeFields, DirectionSchema, IdSchema } from './envelope.js';
 import { StyleSchema } from './style.js';
+
+/**
+ * Spec §3.2: `<set>/<name>` or a relative `.svg` path. Modeled as a union
+ * of the two forms' own patterns (not a bare `z.string().superRefine(...)`)
+ * so `z.toJSONSchema` emits an `anyOf` carrying both patterns (spec §8,
+ * published JSON Schema) instead of degrading to a bare `string`. The
+ * `superRefine` on top still runs `parseIconRef` so path-syntax details
+ * (e.g. no backslashes, no leading `/`) are enforced beyond what the
+ * regexes alone capture, and both forms share the one `icon_invalid`
+ * message used everywhere else (`ICON_REF_FORMS_MESSAGE`).
+ */
+export const IconRefSchema = z
+  .union([z.string().regex(ICON_SET_REF_RE), z.string().regex(ICON_SVG_PATH_RE)], {
+    error: ICON_REF_FORMS_MESSAGE,
+  })
+  .superRefine((value, ctx) => {
+    try {
+      parseIconRef(value);
+    } catch (error) {
+      ctx.addIssue({
+        code: 'custom',
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
 
 /**
  * The union of every flowchart and architecture shape. The schema does not
@@ -23,6 +54,7 @@ const ALL_GRAPH_SHAPES = [
   'cloud',
   'person',
   'package',
+  'image',
 ] as const satisfies readonly GraphShape[];
 export const GraphShapeSchema = z.enum(ALL_GRAPH_SHAPES);
 
@@ -30,6 +62,7 @@ export const GroupSchema = z
   .object({
     id: IdSchema,
     label: z.string().optional(),
+    icon: IconRefSchema.optional(),
     in: z.string().optional(),
     style: StyleSchema.optional(),
   })
@@ -40,6 +73,7 @@ export const NodeSchema = z
   .object({
     id: IdSchema,
     label: z.string().optional(),
+    icon: IconRefSchema.optional(),
     shape: GraphShapeSchema.optional(),
     in: z.string().optional(),
     description: z.string().optional(),

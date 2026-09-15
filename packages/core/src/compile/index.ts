@@ -1,6 +1,8 @@
 import type { Diagram, SequenceItem, ViewModel } from '../model/types.js';
 import type { LaidOutConnection, LaidOutDiagram } from '../engine/types.js';
 import type { KeyMap } from '../overlay/types.js';
+import type { ResolvedTheme } from '../theme/types.js';
+import type { ResolvedIcons } from '../icons/types.js';
 import { DiagrammarError } from '../errors.js';
 import { compileGraph, absGroupKey, absNodeKey } from './graph.js';
 import { compileSequence } from './sequence.js';
@@ -65,11 +67,18 @@ function buildKeyMap(model: Diagram): Map<string, string> {
  * `modelKeyForConnection` directly: it is a pure function of its two
  * arguments with no shared module-level state to reset or leak.
  */
-export function compile(model: Diagram, view?: string): CompileResult {
+export function compile(
+  model: Diagram,
+  view?: string,
+  theme?: ResolvedTheme,
+  icons?: ResolvedIcons,
+): CompileResult {
   pairNextIndex.delete(model);
   const viewModel = findView(model, view);
   const d2 =
-    model.type === 'sequence' ? compileSequence(model, viewModel) : compileGraph(model, viewModel);
+    model.type === 'sequence'
+      ? compileSequence(model, viewModel, theme, icons)
+      : compileGraph(model, viewModel, theme, icons);
   return { d2, keyMap: buildKeyMap(model) };
 }
 

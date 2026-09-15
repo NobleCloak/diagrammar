@@ -7,6 +7,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { DiagramDocument } from '@noblecloak/diagrammar-core';
 import { register } from './edit.js';
+import { defaultIconRegistry } from '../icons.js';
 import type { ToolContext } from '../fs.js';
 
 const FLOWCHART =
@@ -51,7 +52,7 @@ describe('diagrammar_edit', () => {
   });
 
   it('applies an op to inline source and returns updated YAML without writing a file', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_edit',
       arguments: { source: FLOWCHART, ops: [{ op: 'addNode', node: { id: 'c' } }] },
@@ -69,7 +70,7 @@ describe('diagrammar_edit', () => {
   });
 
   it('applies an op to a path-based file and writes it back', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_edit',
       arguments: { path: 'f.yaml', ops: [{ op: 'addNode', node: { id: 'c' } }] },
@@ -81,7 +82,7 @@ describe('diagrammar_edit', () => {
   });
 
   it('applies a JSON Patch to inline source and returns updated YAML without writing a file', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_edit',
       arguments: {
@@ -98,7 +99,7 @@ describe('diagrammar_edit', () => {
   });
 
   it('applies a JSON Patch to a path-based file and writes it back', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_edit',
       arguments: { path: 'f.yaml', patch: [{ op: 'add', path: '/nodes/-', value: { id: 'c' } }] },
@@ -110,7 +111,7 @@ describe('diagrammar_edit', () => {
   });
 
   it('rejects a call with both "ops" and "patch"', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_edit',
       arguments: {
@@ -134,7 +135,7 @@ describe('diagrammar_edit', () => {
   });
 
   it('rejects a call with neither "ops" nor "patch"', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_edit',
       arguments: { path: 'f.yaml' },
@@ -152,7 +153,7 @@ describe('diagrammar_edit', () => {
   });
 
   it('returns a conflict error on hash mismatch, leaving the file untouched', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const before = await readFile(join(root, 'f.yaml'), 'utf8');
     const result = await client.callTool({
       name: 'diagrammar_edit',
@@ -177,7 +178,7 @@ describe('diagrammar_edit', () => {
   });
 
   it('succeeds when expectedHash matches the current hash', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const currentHash = DiagramDocument.from(FLOWCHART).hash();
     const result = await client.callTool({
       name: 'diagrammar_edit',
@@ -192,7 +193,7 @@ describe('diagrammar_edit', () => {
   });
 
   it('is atomic: an invalid op batch leaves the document unchanged and reports bracket-path issues', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_edit',
       arguments: {
@@ -211,7 +212,7 @@ describe('diagrammar_edit', () => {
   });
 
   it('is atomic: an invalid patch batch leaves the document unchanged and reports JSON-Pointer issues', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const result = await client.callTool({
       name: 'diagrammar_edit',
       arguments: { path: 'f.yaml', patch: [{ op: 'remove', path: '/nonexistent' }] },
@@ -227,7 +228,11 @@ describe('diagrammar_edit', () => {
   });
 
   it('excludes path from the registered schema under --no-fs', async () => {
-    const client = await connectedClient({ root: undefined, noFs: true });
+    const client = await connectedClient({
+      root: undefined,
+      noFs: true,
+      icons: defaultIconRegistry(),
+    });
     const tools = await client.listTools();
     const tool = tools.tools.find((t) => t.name === 'diagrammar_edit');
     if (tool === undefined) throw new Error('diagrammar_edit not found');
@@ -238,7 +243,7 @@ describe('diagrammar_edit', () => {
   });
 
   it('includes path in the registered schema when fs is enabled', async () => {
-    const client = await connectedClient({ root, noFs: false });
+    const client = await connectedClient({ root, noFs: false, icons: defaultIconRegistry() });
     const tools = await client.listTools();
     const tool = tools.tools.find((t) => t.name === 'diagrammar_edit');
     if (tool === undefined) throw new Error('diagrammar_edit not found');

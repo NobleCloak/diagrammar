@@ -7,6 +7,9 @@ import type {
   SequenceDiagram,
   SequenceItem,
 } from './types.js';
+import { normalizeRelativePath } from '../assets/paths.js';
+import { isIconPathRef } from '../icons/ref.js';
+import { isPresetName } from '../theme/presets.js';
 
 /**
  * Spec §3.6 rules beyond the schema. Rule 7 ("family mismatch: nodes/edges
@@ -21,6 +24,8 @@ export function runSemanticRules(diagram: Diagram): ValidationIssue[] {
     ...checkDuplicateIds(diagram),
     ...checkReferences(diagram),
     ...checkDuplicateCalloutNumbers(diagram),
+    ...checkThemePath(diagram),
+    ...checkIconPaths(diagram),
   ];
   if (diagram.type === 'sequence') {
     issues.push(...checkFragmentsNonEmpty(diagram));
@@ -30,6 +35,7 @@ export function runSemanticRules(diagram: Diagram): ValidationIssue[] {
       ...checkAmbiguousEdges(diagram),
       ...checkShapeVocabulary(diagram),
       ...checkGroupParentFamily(diagram),
+      ...checkImageShapesHaveIcons(diagram),
     );
   }
   return issues;
@@ -294,6 +300,69 @@ function checkGroupParentFamily(diagram: GraphDiagram): ValidationIssue[] {
         message: '"in" is only valid for architecture groups; flowchart groups are flat',
       });
     }
+  });
+  return issues;
+}
+
+// --- Rule 10: a path-form theme is a well-formed relative path -------------
+
+/**
+ * Syntax only (spec §6.1): the schema already guarantees a path form looks
+ * like a path; this rejects absolute paths, drive letters, backslashes and
+ * null bytes. Whether the file exists is `checkThemeRef`'s job, because it
+ * needs an asset resolver and parsing stays synchronous.
+ */
+function checkThemePath(diagram: Diagram): ValidationIssue[] {
+  if (isPresetName(diagram.theme)) return [];
+  try {
+    normalizeRelativePath(diagram.theme);
+    return [];
+  } catch (error) {
+    return [{ path: 'theme', message: error instanceof Error ? error.message : String(error) }];
+  }
+}
+
+// --- Rule 11: shape image requires icon (graph only) ------------------------
+
+function checkImageShapesHaveIcons(diagram: GraphDiagram): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  diagram.nodes.forEach((n, i) => {
+    if (n.shape === 'image' && n.icon === undefined) {
+      issues.push({ path: `nodes[${i}].shape`, message: 'shape "image" requires an icon' });
+    }
+  });
+  return issues;
+}
+
+// --- Rule 12: a path-form icon is a well-formed relative path ---------------
+
+function iconPathIssue(path: string, ref: string): ValidationIssue | undefined {
+  if (!isIconPathRef(ref)) return undefined;
+  try {
+    normalizeRelativePath(ref);
+    return undefined;
+  } catch (error) {
+    return { path, message: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+function checkIconPaths(diagram: Diagram): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  if (diagram.type === 'sequence') {
+    diagram.participants.forEach((p, i) => {
+      const issue =
+        p.icon !== undefined ? iconPathIssue(`participants[${i}].icon`, p.icon) : undefined;
+      if (issue) issues.push(issue);
+    });
+    return issues;
+  }
+  diagram.groups.forEach((g, i) => {
+    const issue = g.icon !== undefined ? iconPathIssue(`groups[${i}].icon`, g.icon) : undefined;
+    if (issue) issues.push(issue);
+  });
+  diagram.nodes.forEach((n, i) => {
+    const issue = n.icon !== undefined ? iconPathIssue(`nodes[${i}].icon`, n.icon) : undefined;
+    if (issue) issues.push(issue);
   });
   return issues;
 }

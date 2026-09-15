@@ -147,4 +147,25 @@ current hash no longer matches.
   { "op": "add", "path": "/nodes/-", "value": { "id": "review", "label": "Review order" } }
 ]
 \`\`\`
+
+## Themes
+
+Add "theme: dark" (presets: light, dark, colorblind, mono) or point at a
+theme file: "theme: ./themes/house.yaml" — a YAML file starting
+"diagrammar-theme: 1" with "base: <preset>", an optional "palette"
+(background, fill, stroke, text, groupFill, edge) and optional "defaults"
+(nodes/groups/edges/participants, plus per-shape "shapes", per-kind
+"kinds", and per-style "messages"). An element's own "style" always wins.
+Fetch the theme schema with diagrammar_schema { kind: "theme" }.
+
+## Icons
+
+Add "icon: lucide/database" (or "icon: simple-icons/postgresql", or a
+relative path like "icon: ./icons/x.svg") to a node, group, or participant.
+With "shape: image" the icon becomes the node itself, its label drawn below;
+without it, the icon sits alongside the label. Discover names with
+diagrammar_icons { query: "database" } — omit "query" to list the
+registered sets. An unknown name fails validation with nearest-name
+suggestions. Simple Icons has no AWS marks; use a locally imported "aws/"
+set for those.
 `;

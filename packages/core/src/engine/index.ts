@@ -6,7 +6,6 @@ export type {
   LaidOutShape,
   LayoutEngine,
   Point,
-  Theme,
 } from './types.js';
 export { compileAndRender, shutdown } from './D2Engine.js';
 export { FONT_FAMILY, loadFonts } from './fonts.js';

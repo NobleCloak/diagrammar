@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { mkdtemp, writeFile, mkdir, rm, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -8,8 +8,10 @@ import {
   resolveInRoot,
   listDiagrams,
   resolveSource,
+  assetResolverFor,
   type ToolContext,
 } from './fs.js';
+import { defaultIconRegistry } from './icons.js';
 
 describe('resolveInRoot', () => {
   it('resolves a plain relative path inside root', () => {
@@ -167,13 +169,17 @@ describe('listDiagrams symlink and exclusion jail', () => {
 
 describe('assertFsEnabled', () => {
   it('does not throw when noFs is false and root is defined', () => {
-    expect(() => assertFsEnabled({ root: '/tmp/root', noFs: false })).not.toThrow();
+    expect(() =>
+      assertFsEnabled({ root: '/tmp/root', noFs: false, icons: defaultIconRegistry() }),
+    ).not.toThrow();
   });
 
   it('throws fs_disabled when noFs is true', () => {
-    expect(() => assertFsEnabled({ root: undefined, noFs: true })).toThrow(DiagrammarError);
+    expect(() =>
+      assertFsEnabled({ root: undefined, noFs: true, icons: defaultIconRegistry() }),
+    ).toThrow(DiagrammarError);
     try {
-      assertFsEnabled({ root: undefined, noFs: true });
+      assertFsEnabled({ root: undefined, noFs: true, icons: defaultIconRegistry() });
       throw new Error('expected assertFsEnabled to throw');
     } catch (err) {
       expect(err).toBeInstanceOf(DiagrammarError);
@@ -182,13 +188,19 @@ describe('assertFsEnabled', () => {
   });
 
   it('throws fs_disabled when noFs is false but root is undefined', () => {
-    expect(() => assertFsEnabled({ root: undefined, noFs: false })).toThrow(DiagrammarError);
+    expect(() =>
+      assertFsEnabled({ root: undefined, noFs: false, icons: defaultIconRegistry() }),
+    ).toThrow(DiagrammarError);
   });
 });
 
 describe('resolveSource', () => {
-  const ctxWithFs: ToolContext = { root: '/tmp/does-not-matter', noFs: false };
-  const ctxNoFs: ToolContext = { root: undefined, noFs: true };
+  const ctxWithFs: ToolContext = {
+    root: '/tmp/does-not-matter',
+    noFs: false,
+    icons: defaultIconRegistry(),
+  };
+  const ctxNoFs: ToolContext = { root: undefined, noFs: true, icons: defaultIconRegistry() };
 
   it('returns inline source text unchanged', async () => {
     const result = await resolveSource(ctxWithFs, { source: 'diagrammar: 1\n' });
@@ -214,9 +226,73 @@ describe('resolveSource', () => {
   it('reads and returns the file at path, resolved against root', async () => {
     const root = await mkdtemp(join(tmpdir(), 'diagrammar-fs-'));
     await writeFile(join(root, 'x.yaml'), 'diagrammar: 1\n', 'utf8');
-    const result = await resolveSource({ root, noFs: false }, { path: 'x.yaml' });
+    const result = await resolveSource(
+      { root, noFs: false, icons: defaultIconRegistry() },
+      { path: 'x.yaml' },
+    );
     expect(result.text).toBe('diagrammar: 1\n');
     expect(result.resolvedPath).toBe(join(root, 'x.yaml'));
     await rm(root, { recursive: true, force: true });
+  });
+});
+
+describe('assetResolverFor', () => {
+  let root: string;
+  beforeEach(async () => {
+    root = await mkdtemp(join(tmpdir(), 'diagrammar-assets-'));
+    await mkdir(join(root, 'diagrams'), { recursive: true });
+    await mkdir(join(root, 'themes'), { recursive: true });
+    await writeFile(join(root, 'themes', 'house.yaml'), 'base: light\n', 'utf8');
+  });
+  afterEach(async () => {
+    await rm(root, { recursive: true, force: true });
+  });
+
+  it('under --no-fs every read fails with asset_fs_disabled', async () => {
+    const r = assetResolverFor({ root: undefined, noFs: true, icons: defaultIconRegistry() });
+    await expect(r.read('themes/house.yaml')).rejects.toMatchObject({ code: 'asset_fs_disabled' });
+  });
+
+  it('resolves relative to the diagram directory and allows .. inside the root', async () => {
+    const r = assetResolverFor(
+      { root, noFs: false, icons: defaultIconRegistry() },
+      join(root, 'diagrams', 'd.yaml'),
+    );
+    const bytes = await r.read('../themes/house.yaml');
+    expect(new TextDecoder().decode(bytes)).toBe('base: light\n');
+  });
+
+  it('resolves relative to the root for inline source', async () => {
+    const r = assetResolverFor({ root, noFs: false, icons: defaultIconRegistry() });
+    await expect(r.read('themes/house.yaml')).resolves.toBeInstanceOf(Uint8Array);
+  });
+
+  it('rejects a path that escapes the root with asset_outside_base', async () => {
+    const r = assetResolverFor(
+      { root, noFs: false, icons: defaultIconRegistry() },
+      join(root, 'diagrams', 'd.yaml'),
+    );
+    await expect(r.read('../../outside.yaml')).rejects.toMatchObject({
+      code: 'asset_outside_base',
+    });
+  });
+
+  it('rejects a symlink whose target escapes the root', async () => {
+    const outside = await mkdtemp(join(tmpdir(), 'diagrammar-outside-'));
+    try {
+      await writeFile(join(outside, 'evil.yaml'), 'base: dark\n', 'utf8');
+      await symlink(join(outside, 'evil.yaml'), join(root, 'themes', 'link.yaml'));
+      const r = assetResolverFor({ root, noFs: false, icons: defaultIconRegistry() });
+      await expect(r.read('themes/link.yaml')).rejects.toMatchObject({
+        code: 'asset_outside_base',
+      });
+    } finally {
+      await rm(outside, { recursive: true, force: true });
+    }
+  });
+
+  it('reports a missing file as asset_not_found', async () => {
+    const r = assetResolverFor({ root, noFs: false, icons: defaultIconRegistry() });
+    await expect(r.read('themes/missing.yaml')).rejects.toMatchObject({ code: 'asset_not_found' });
   });
 });
