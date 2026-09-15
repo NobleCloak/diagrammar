@@ -14,17 +14,18 @@ function reject(reason: string): never {
 const FORBIDDEN: ReadonlyArray<[RegExp, string]> = [
   [/<!DOCTYPE/i, 'DOCTYPE declarations are not allowed'],
   [/<!ENTITY/i, 'ENTITY declarations are not allowed'],
-  [/<script[\s>]/i, '<script> is not allowed'],
-  [/<foreignObject[\s>]/i, '<foreignObject> is not allowed'],
-  [/\son[a-z]+\s*=/i, 'event-handler attributes are not allowed'],
-  [/<style[\s>][^]*?@import/i, '<style> with @import is not allowed'],
+  [/<script[\s/>]/i, '<script> is not allowed'],
+  [/<foreignObject[\s/>]/i, '<foreignObject> is not allowed'],
+  [/[\s/]on[a-z]+\s*=/i, 'event-handler attributes are not allowed'],
+  [/<style[\s/>]/i, '<style> is not allowed'],
 ];
 
 /**
  * Every href (prefixed or not) and xlink:href must be a same-document fragment.
  * Matches: quoted (single or double), unquoted, with optional namespace prefix.
+ * Requires whitespace or / as delimiter before href (tag-soup parsing).
  */
-const HREF_RE = /\s(?:[A-Za-z_][\w.-]*:)?href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/gi;
+const HREF_RE = /[\s/](?:[A-Za-z_][\w.-]*:)?href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/gi;
 
 /**
  * The security boundary for icons (spec §5.3): applied at set build time and

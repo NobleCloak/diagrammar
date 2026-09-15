@@ -81,7 +81,7 @@ describe('sanitizeSvg rejections (icon_invalid)', () => {
     ['event handler', wrap('<rect onload="x()"/>')],
     ['external href', wrap('<image href="https://evil/x.png"/>')],
     ['external xlink:href', wrap('<use xlink:href="file:///etc/passwd"/>')],
-    ['style import', wrap('<style>@import url(x)</style>')],
+    ['style', wrap('<style>@import url(x)</style>')],
     ['doctype', '<!DOCTYPE svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9 9"/>'],
     ['entity', '<!ENTITY x "y"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9 9"/>'],
     ['not an svg', '<div>hi</div>'],
@@ -95,6 +95,12 @@ describe('sanitizeSvg rejections (icon_invalid)', () => {
       '<svg xmlns="http://www.w3.org/2000/svg" xmlns:x="http://www.w3.org/1999/xlink" viewBox="0 0 9 9"><use x:href="http://evil/x.svg"/></svg>',
     ],
     ['unquoted external href', wrap('<image href=http://evil/x.png />')],
+    ['slash-delimited script tag', wrap('<script/src="http://evil/x.js"></script>')],
+    ['slash-delimited event handler', wrap('<rect/onload="alert(1)"/>')],
+    ['slash-delimited href', wrap('<use/href="http://evil/x.svg"/>')],
+    ['style with CSS hex escape', wrap('<style>a{}@\\69mport url(evil);</style>')],
+    ['style with content', wrap('<style>.a{fill:red}</style>')],
+    ['slash-delimited foreignObject', wrap('<foreignObject/>')],
   ])('rejects %s', (_label, svg) => {
     expect(() => sanitizeSvg(svg)).toThrowError(expect.objectContaining({ code: 'icon_invalid' }));
   });
@@ -102,6 +108,9 @@ describe('sanitizeSvg rejections (icon_invalid)', () => {
     expect(() =>
       sanitizeSvg(wrap('<defs><path id="p" d="M0 0"/></defs><use href="#p"/>')),
     ).not.toThrow();
+  });
+  it('allows slash-delimited fragment hrefs', () => {
+    expect(() => sanitizeSvg(wrap('<use/href="#p"/>'))).not.toThrow();
   });
   it('rejects an icon over the byte cap, naming the cap', () => {
     const big = wrap(`<path d="${'M0 0 '.repeat(ICON_MAX_BYTES / 5)}"/>`);
