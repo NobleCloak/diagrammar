@@ -356,10 +356,10 @@ tool behavior and is stated in the format guide.
 
 ### 7.1 CLI
 
-- `diagrammar icons search <query> [--set <id>] [--limit n]` — one
-  `set/name` per line, ranked.
-- `diagrammar icons sets` — id, version, license, icon count per registered
-  set.
+- `diagrammar icons search <query> [--set <id>] [--limit n] [--icons <dir>]...` —
+  one `set/name` per line, ranked.
+- `diagrammar icons sets [--icons <dir>]...` — id, version, license, icon count
+  per registered set.
 - `diagrammar icons import aws <zip> --out <dir>` — §5.5.
 - `diagrammar themes list` — preset names with their D2 base.
 - `--icons <dir>` — repeatable; registers a local set directory. Accepted by

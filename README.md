@@ -107,8 +107,8 @@ diagrammar describe <file> [--json]
 diagrammar edit <file> --ops <ops.json|-> [--expected-hash <sha256>]
 diagrammar mcp [--root <dir>] [--port 3737] [--host 127.0.0.1] [--no-fs] [--allow-origin <origin>]... [--icons <dir>]...
 diagrammar themes list [--json]
-diagrammar icons search <query> [--set <id>] [--limit n] [--json]
-diagrammar icons sets [--json]
+diagrammar icons search <query> [--set <id>] [--limit n] [--icons <dir>]... [--json]
+diagrammar icons sets [--icons <dir>]... [--json]
 diagrammar icons import aws <zip> --out <dir>
 ```
 
