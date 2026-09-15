@@ -59,6 +59,19 @@ describe('syncPluginVersion', () => {
     );
   });
 
+  it('changes only the version token in a Prettier-formatted plugin.json', async () => {
+    // What Prettier actually emits for the real manifest: `author` and
+    // `keywords` on one line each. JSON.stringify would explode both across
+    // lines and fail `format:check` on the bot's Version Packages PR.
+    const pretty = (version: string): string =>
+      `{\n  "name": "diagrammar",\n  "version": "${version}",\n  "author": { "name": "NobleCloak", "url": "https://github.com/NobleCloak" },\n  "keywords": ["diagram", "mcp"]\n}\n`;
+    await writeFile(path.join(root, 'plugin/.claude-plugin/plugin.json'), pretty('0.2.0'));
+    const result = syncPluginVersion(root);
+    expect(result).toEqual({ previous: '0.2.0', current: '0.3.0', range: '^0.3' });
+    const text = await readFile(path.join(root, 'plugin/.claude-plugin/plugin.json'), 'utf8');
+    expect(text).toBe(pretty('0.3.0'));
+  });
+
   it('rewrites the npx caret range in .mcp.json and every doc, and nothing else', async () => {
     syncPluginVersion(root);
 
