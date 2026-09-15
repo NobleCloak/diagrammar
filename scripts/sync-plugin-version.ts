@@ -14,6 +14,8 @@ function caretRange(version: string): string {
 }
 
 const RANGE_TOKEN = /@noblecloak\/diagrammar@\^\d+\.\d+/g;
+/** The manifest's top-level `"version": "..."` line; the two groups keep everything but the value. */
+const VERSION_TOKEN = /^(\s*"version":\s*")[^"]*(")/m;
 
 /**
  * Rewrites every `@noblecloak/diagrammar@^M.N` occurrence in `filePath` to
@@ -47,13 +49,18 @@ export function syncPluginVersion(repoRoot: string): {
   const cliManifest = path.join(repoRoot, 'packages/cli/package.json');
   const pluginManifest = path.join(repoRoot, 'plugin/.claude-plugin/plugin.json');
   const current = (JSON.parse(readFileSync(cliManifest, 'utf8')) as { version: string }).version;
-  const plugin = JSON.parse(readFileSync(pluginManifest, 'utf8')) as Record<string, unknown> & {
-    version: string;
-  };
-  const previous = plugin.version;
+  const pluginText = readFileSync(pluginManifest, 'utf8');
+  const previous = (JSON.parse(pluginText) as { version: string }).version;
   if (previous !== current) {
-    plugin.version = current; // assignment keeps the key in its original position
-    writeFileSync(pluginManifest, JSON.stringify(plugin, null, 2) + '\n');
+    // Textual substitution of the one `"version": "..."` token, never a
+    // JSON re-serialization: JSON.stringify(…, null, 2) explodes the
+    // single-line `author`/`keywords` that Prettier wants, and the bot's
+    // Version Packages PR then fails `format:check`.
+    const updated = pluginText.replace(VERSION_TOKEN, `$1${current}$2`);
+    if (updated === pluginText) {
+      throw new Error(`could not find the "version" field in ${pluginManifest}`);
+    }
+    writeFileSync(pluginManifest, updated);
   }
 
   const range = caretRange(current);
