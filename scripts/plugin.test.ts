@@ -124,6 +124,24 @@ describe('marketplace', () => {
     expect(marketplace.plugins.map((p) => p.name)).toEqual(['diagrammar']);
   });
 
+  it('every install string in the user-facing docs names a listed plugin and this marketplace', () => {
+    const docs = ['README.md', 'plugin/README.md', 'docs/plugin-submission.md'];
+    const pattern = /claude plugin install (\S+)@([^\s`]+)/g;
+    let found = 0;
+    for (const doc of docs) {
+      const text = readFileSync(path.join(repoRoot, doc), 'utf8');
+      for (const [, plugin, market] of text.matchAll(pattern)) {
+        found += 1;
+        expect(market, `${doc}: ${plugin}@${market}`).toBe(marketplace.name);
+        expect(
+          marketplace.plugins.map((p) => p.name),
+          `${doc}: ${plugin}`,
+        ).toContain(plugin);
+      }
+    }
+    expect(found).toBeGreaterThanOrEqual(docs.length);
+  });
+
   it('every plugin source resolves to a directory holding .claude-plugin/plugin.json', () => {
     for (const plugin of marketplace.plugins) {
       expect(plugin.source).toMatch(/^\.\//);
