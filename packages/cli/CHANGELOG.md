@@ -1,5 +1,16 @@
 # @noblecloak/diagrammar
 
+## 0.3.1
+
+### Patch Changes
+
+- 323ece6: The Claude Code plugin marketplace is now named `diagrammar` (it was `noblecloak`), so the
+  install command is `claude plugin install diagrammar@diagrammar`. If you installed under the
+  old name, run `claude plugin marketplace remove noblecloak`, then
+  `claude plugin marketplace add NobleCloak/diagrammar` and reinstall.
+- @noblecloak/diagrammar-core@0.3.1
+  - @noblecloak/diagrammar-mcp@0.3.1
+
 ## 0.3.0
 
 ### Minor Changes
