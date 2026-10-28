@@ -119,9 +119,27 @@ describe('marketplace', () => {
     plugins: { name: string; source: string }[];
   };
 
-  it('is the noblecloak marketplace listing the diagrammar plugin', () => {
-    expect(marketplace.name).toBe('noblecloak');
+  it('is the diagrammar marketplace listing the diagrammar plugin', () => {
+    expect(marketplace.name).toBe('diagrammar');
     expect(marketplace.plugins.map((p) => p.name)).toEqual(['diagrammar']);
+  });
+
+  it('every install string in the user-facing docs names a listed plugin and this marketplace', () => {
+    const docs = ['README.md', 'plugin/README.md', 'docs/plugin-submission.md'];
+    const pattern = /claude plugin install (\S+)@([^\s`]+)/g;
+    let found = 0;
+    for (const doc of docs) {
+      const text = readFileSync(path.join(repoRoot, doc), 'utf8');
+      for (const [, plugin, market] of text.matchAll(pattern)) {
+        found += 1;
+        expect(market, `${doc}: ${plugin}@${market}`).toBe(marketplace.name);
+        expect(
+          marketplace.plugins.map((p) => p.name),
+          `${doc}: ${plugin}`,
+        ).toContain(plugin);
+      }
+    }
+    expect(found).toBeGreaterThanOrEqual(docs.length);
   });
 
   it('every plugin source resolves to a directory holding .claude-plugin/plugin.json', () => {
