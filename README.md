@@ -183,7 +183,9 @@ claude plugin install diagrammar@diagrammar
 ```
 
 If you installed the plugin while the marketplace was named `noblecloak`, remove that
-marketplace and add it again under the new name:
+marketplace and add it again under the new name. Run `claude plugin marketplace list`
+first and remove `noblecloak` only if its source is `NobleCloak/diagrammar`; the name
+`noblecloak` may now belong to a different marketplace.
 
 ```bash
 claude plugin marketplace remove noblecloak
