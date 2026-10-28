@@ -2,7 +2,7 @@
 
 Maintainer checklist. Users do not need any of this: they install with
 `claude plugin marketplace add NobleCloak/diagrammar` and
-`claude plugin install diagrammar@noblecloak`.
+`claude plugin install diagrammar@diagrammar`.
 
 ## Before submitting
 
@@ -11,7 +11,7 @@ Maintainer checklist. Users do not need any of this: they install with
 - [ ] That version is live on npm with provenance (`npm view @noblecloak/diagrammar version`).
 - [ ] Fresh install works end to end in a scratch project:
       `claude plugin marketplace add NobleCloak/diagrammar`,
-      `claude plugin install diagrammar@noblecloak`, then `/mcp` shows `diagrammar`
+      `claude plugin install diagrammar@diagrammar`, then `/mcp` shows `diagrammar`
       connected and a `diagrammar_render` call succeeds.
 - [ ] `claude plugin validate ./plugin --strict` and
       `claude plugin validate ./.claude-plugin/marketplace.json --strict` both pass.

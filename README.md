@@ -179,7 +179,16 @@ Or install the plugin, which registers the skill and this server together:
 
 ```bash
 claude plugin marketplace add NobleCloak/diagrammar
-claude plugin install diagrammar@noblecloak
+claude plugin install diagrammar@diagrammar
+```
+
+If you installed the plugin while the marketplace was named `noblecloak`, remove that
+marketplace and add it again under the new name:
+
+```bash
+claude plugin marketplace remove noblecloak
+claude plugin marketplace add NobleCloak/diagrammar
+claude plugin install diagrammar@diagrammar
 ```
 
 TypeScript consumers building an MCP client under `exactOptionalPropertyTypes`

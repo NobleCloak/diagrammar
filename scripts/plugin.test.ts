@@ -119,8 +119,8 @@ describe('marketplace', () => {
     plugins: { name: string; source: string }[];
   };
 
-  it('is the noblecloak marketplace listing the diagrammar plugin', () => {
-    expect(marketplace.name).toBe('noblecloak');
+  it('is the diagrammar marketplace listing the diagrammar plugin', () => {
+    expect(marketplace.name).toBe('diagrammar');
     expect(marketplace.plugins.map((p) => p.name)).toEqual(['diagrammar']);
   });
 
